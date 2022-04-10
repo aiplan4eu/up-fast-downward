@@ -33,6 +33,12 @@ class FastDownwardPDDLSolver(PDDLSolver):
             return up.solvers.results.SOLVED_SATISFICING
 
     @staticmethod
+    def satisfies(optimality_guarantee: Union[int, str]) -> bool:
+        if optimality_guarantee == up.solvers.solver.SATISFICING:
+            return True
+        return False
+
+    @staticmethod
     def supports(problem_kind: 'ProblemKind') -> bool:
         supported_kind = ProblemKind()
         supported_kind.set_typing('FLAT_TYPING')
@@ -74,6 +80,7 @@ class FastDownwardOptimalPDDLSolver(PDDLSolver):
 
     @staticmethod
     def supports(problem_kind: 'ProblemKind') -> bool:
+        # TODO metrics MinimizeActionCosts and MinimizeSequentialPlanLength
         supported_kind = ProblemKind()
         supported_kind.set_typing('FLAT_TYPING')
         supported_kind.set_conditions_kind('NEGATIVE_CONDITIONS')
