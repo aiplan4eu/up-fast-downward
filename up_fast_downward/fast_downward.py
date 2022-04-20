@@ -3,6 +3,7 @@ import unified_planning as up
 
 from typing import List, Optional, Union
 from unified_planning.shortcuts import ProblemKind
+from unified_planning.solvers import OptimalityGuarantee, PlanGenerationResultStatus
 from unified_planning.solvers import PDDLSolver
 
 
@@ -28,13 +29,13 @@ class FastDownwardPDDLSolver(PDDLSolver):
 
     def _result_status(self, problem: 'up.model.Problem', plan: Optional['up.plan.Plan']) -> int:
         if plan is None:
-            return up.solvers.results.UNSOLVABLE_INCOMPLETE
+            return PlanGenerationResultStatus.UNSOLVABLE_INCOMPLETE
         else:
-            return up.solvers.results.SOLVED_SATISFICING
+            return PlanGenerationResultStatus.SOLVED_SATISFICING
 
     @staticmethod
     def satisfies(optimality_guarantee: Union[int, str]) -> bool:
-        if optimality_guarantee == up.solvers.solver.SATISFICING:
+        if optimality_guarantee == OptimalityGuarantee.SATISFICING:
             return True
         return False
 
@@ -74,9 +75,9 @@ class FastDownwardOptimalPDDLSolver(PDDLSolver):
 
     def _result_status(self, problem: 'up.model.Problem', plan: Optional['up.plan.Plan']) -> int:
         if plan is None:
-            return up.solvers.results.UNSOLVABLE_PROVEN
+            return PlanGenerationResultStatus.UNSOLVABLE_PROVEN
         else:
-            return up.solvers.results.SOLVED_OPTIMALLY
+            return PlanGenerationResultStatus.SOLVED_OPTIMALLY
 
     @staticmethod
     def supports(problem_kind: 'ProblemKind') -> bool:
@@ -92,6 +93,6 @@ class FastDownwardOptimalPDDLSolver(PDDLSolver):
 
     @staticmethod
     def satisfies(optimality_guarantee: Union[int, str]) -> bool:
-        if optimality_guarantee in up.solvers.solver.OPTIMALITY_GUARANTEES:
+        if optimality_guarantee in OptimalityGuarantee:
             return True
         return False
