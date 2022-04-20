@@ -40,20 +40,20 @@ jobs:
 #          path: dist
 
 
-  build-macos:
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Build wheel
-        run: python3 setup.py bdist_wheel
-
-      - uses: actions/upload-artifact@master
-        with:
-          name: macos-wheel
-          path: dist
+#  build-macos:
+#    runs-on: macos-latest
+#
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#
+#      - name: Build wheel
+#        run: python3 setup.py bdist_wheel
+#
+#      - uses: actions/upload-artifact@master
+#        with:
+#          name: macos-wheel
+#          path: dist
 
 
   deploy-pypi:

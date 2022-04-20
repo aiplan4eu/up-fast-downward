@@ -44,7 +44,7 @@ def clone_and_compile_fast_downward():
         'add_build_config.patch'])
     os.chdir('up_fast_downward/downward')
     print("Building Fast Downward (this can take some time)...")
-    build = subprocess.run(['./build.py', 'release_no_lp'])
+    build = subprocess.run(['python3', 'build.py', 'release_no_lp'])
     shutil.move('builds/release_no_lp', 'builds/release')
     os.chdir(curr_dir)
 
