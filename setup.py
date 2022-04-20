@@ -50,6 +50,12 @@ setup(name='up_fast_downward',
       description='Unified Planning Integration of the Fast Downward planning system',
       author='UNIBAS Team',
       author_email='gabriele.roeger@unibas.ch',
+      url='https://github.com/aiplan4eu/up-fast-downward/',
+      classifiers=['Development Status :: 3 - Alpha',
+                   'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+                   'Programming Language :: Python :: 3',
+                   'Topic :: Scientific/Engineering :: Artificial Intelligence'
+                   ],
       packages=['up_fast_downward'],
       package_data={
           "": ['fast_downward.py', 'downward/fast-downward.py',
