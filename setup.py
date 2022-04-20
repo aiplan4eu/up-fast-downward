@@ -21,9 +21,12 @@ def clone_and_compile_fast_downward():
     shutil.move('downward', 'up_fast_downward/downward')
     subprocess.run(['patch', 'up_fast_downward/downward/driver/aliases.py',
         'skip_pycache.patch'])
+    subprocess.run(['patch', 'up_fast_downward/downward/build_configs.py',
+        'add_build_config.patch'])
     os.chdir('up_fast_downward/downward')
     print("Building Fast Downward (this can take some time)...")
-    build = subprocess.run('./build.py')
+    build = subprocess.run(['./build.py', 'release_no_lp'])
+    shutil.move('builds/release_no_lp', 'builds/release')
     os.chdir(curr_dir)
 
 
