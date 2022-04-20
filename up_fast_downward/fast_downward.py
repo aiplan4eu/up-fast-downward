@@ -2,7 +2,7 @@ import pkg_resources
 import unified_planning as up
 
 from typing import List, Optional, Union
-from unified_planning.shortcuts import ProblemKind
+from unified_planning.model import ProblemKind
 from unified_planning.solvers import OptimalityGuarantee, PlanGenerationResultStatus
 from unified_planning.solvers import PDDLSolver
 
@@ -15,8 +15,8 @@ class FastDownwardPDDLSolver(PDDLSolver):
     def destroy(self):
         pass
 
-    @staticmethod
-    def name() -> str:
+    @property
+    def name(self) -> str:
         return 'Fast Downward'
 
     def _get_cmd(self, domain_filename: str,
@@ -61,8 +61,8 @@ class FastDownwardOptimalPDDLSolver(PDDLSolver):
     def destroy(self):
         pass
 
-    @staticmethod
-    def name() -> str:
+    @property
+    def name(self) -> str:
         return 'Fast Downward (with optimality guarantee)'
 
     def _get_cmd(self, domain_filename: str,
