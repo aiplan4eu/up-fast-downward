@@ -10,8 +10,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Build wheel
-        run: python3 setup.py bdist_wheel
+#      - name: Build wheel
+#        run: python3 setup.py bdist_wheel
+      
+      - name: Build manylinux Python wheels
+        uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux2014_x86_64
+        with:
+          python-versions: 'cp36-cp36m cp37-cp37m'
 
       - uses: actions/upload-artifact@master
         with:
