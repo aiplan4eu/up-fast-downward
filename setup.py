@@ -92,4 +92,6 @@ setup(name='up_fast_downward',
           'bdist_wheel': bdist_wheel,
           'build_py': install_fast_downward,
           'develop': install_fast_downward_develop,
-      })
+      },
+      has_ext_modules=lambda: True
+      )
