@@ -23,6 +23,11 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
+    env:
+      ARCH: "x64"
+      CC: cl
+      CXX: cl
+
 
     steps:
       - name: Checkout
