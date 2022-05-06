@@ -38,10 +38,10 @@ def clone_and_compile_fast_downward():
     print("Cloning Fast Downward repository...")
     subprocess.run(['git', 'clone', '-b', FAST_DOWNWARD_RELEASE, FAST_DOWNWARD_REPO])
     shutil.move('downward', 'up_fast_downward/downward')
-    patchset1 = patch.fromfile('skip_pycache.patch')
-    patchset2 = patch.fromfile('add_build_config.patch')
     if sys.platform.startswith("win"):
         import patch
+        patchset1 = patch.fromfile('skip_pycache.patch')
+        patchset2 = patch.fromfile('add_build_config.patch')
         os.chdir('up_fast_downward/downward')
         patchset1.apply()
         patchset2.apply()
