@@ -23,7 +23,7 @@ class FastDownwardPDDLSolver(PDDLSolver):
                  problem_filename: str, plan_filename: str) -> List[str]:
         downward = pkg_resources.resource_filename(__name__,
                                                    'downward/fast-downward.py')
-        cmd = [downward, '--plan-file', plan_filename, '--alias', 'lama-first',
+        cmd = ['python', downward, '--plan-file', plan_filename, '--alias', 'lama-first',
                domain_filename, problem_filename]
         return cmd
 

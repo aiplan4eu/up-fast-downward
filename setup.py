@@ -38,11 +38,19 @@ def clone_and_compile_fast_downward():
     print("Cloning Fast Downward repository...")
     subprocess.run(['git', 'clone', '-b', FAST_DOWNWARD_RELEASE, FAST_DOWNWARD_REPO])
     shutil.move('downward', 'up_fast_downward/downward')
-    subprocess.run(['patch', 'up_fast_downward/downward/driver/aliases.py',
-        'skip_pycache.patch'])
-    subprocess.run(['patch', 'up_fast_downward/downward/build_configs.py',
-        'add_build_config.patch'])
-    os.chdir('up_fast_downward/downward')
+    if sys.platform.startswith("win"):
+        import patch
+        patchset1 = patch.fromfile('skip_pycache.patch')
+        patchset2 = patch.fromfile('add_build_config.patch')
+        os.chdir('up_fast_downward/downward')
+        patchset1.apply()
+        patchset2.apply()
+    else:
+        subprocess.run(['patch', 'up_fast_downward/downward/driver/aliases.py',
+            'skip_pycache.patch'])
+        subprocess.run(['patch', 'up_fast_downward/downward/build_configs.py',
+            'add_build_config.patch'])
+        os.chdir('up_fast_downward/downward')
     print("Building Fast Downward (this can take some time)...")
     build = subprocess.run(['python', 'build.py', 'release_no_lp'])
     shutil.move('builds/release_no_lp', 'builds/release')
@@ -66,7 +74,7 @@ class install_fast_downward_develop(develop):
 long_description = "This package makes the [Fast Downward](https://www.fast-downward.org/) planning system available in the [unified_planning library](https://github.com/aiplan4eu/unified-planning) by the [AIPlan4EU project](https://www.aiplan4eu-project.eu/)."
 
 setup(name='up_fast_downward',
-      version='0.0.1.dev5',
+      version='0.0.1.dev9',
       description='Unified Planning Integration of the Fast Downward planning system',
       long_description=long_description,
       long_description_content_type="text/markdown",
@@ -82,7 +90,7 @@ setup(name='up_fast_downward',
       package_data={
           "": ['fast_downward.py', 'downward/fast-downward.py',
               'downward/README.md', 'downward/LICENSE.md',
-              'downward/builds/release/bin/downward',
+              'downward/builds/release/bin/*',
               'downward/builds/release/bin/translate/*',
               'downward/builds/release/bin/translate/pddl/*',
               'downward/builds/release/bin/translate/pddl_parser/*',
@@ -93,5 +101,6 @@ setup(name='up_fast_downward',
           'build_py': install_fast_downward,
           'develop': install_fast_downward_develop,
       },
+      install_requires=["patch;platform_system=='Windows'"],
       has_ext_modules=lambda: True
       )
