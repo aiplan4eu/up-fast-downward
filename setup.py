@@ -90,10 +90,10 @@ setup(name='up_fast_downward',
       package_data={
           "": ['fast_downward.py', 'downward/fast-downward.py',
               'downward/README.md', 'downward/LICENSE.md',
-              'downward/builds/release/bin/downward',
-              'downward/builds/release/bin/translate/*',
-              'downward/builds/release/bin/translate/pddl/*',
-              'downward/builds/release/bin/translate/pddl_parser/*',
+              'downward/builds/release/bin/*',
+#              'downward/builds/release/bin/translate/*',
+#              'downward/builds/release/bin/translate/pddl/*',
+#              'downward/builds/release/bin/translate/pddl_parser/*',
               'downward/driver/*', 'downward/driver/portfolios/*']
       },
       cmdclass={
