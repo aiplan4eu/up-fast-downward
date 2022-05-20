@@ -29,7 +29,7 @@ class FastDownwardPDDLSolver(PDDLSolver):
 
     def _result_status(self, problem: 'up.model.Problem', plan: Optional['up.plan.Plan']) -> int:
         if plan is None:
-            return PlanGenerationResultStatus.UNSOLVABLE_INCOMPLETE
+            return PlanGenerationResultStatus.UNSOLVABLE_INCOMPLETELY
         else:
             return PlanGenerationResultStatus.SOLVED_SATISFICING
 
