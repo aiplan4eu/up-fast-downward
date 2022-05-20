@@ -1,4 +1,5 @@
 import pkg_resources
+import sys
 import unified_planning as up
 
 from typing import List, Optional, Union
@@ -23,7 +24,8 @@ class FastDownwardPDDLSolver(PDDLSolver):
                  problem_filename: str, plan_filename: str) -> List[str]:
         downward = pkg_resources.resource_filename(__name__,
                                                    'downward/fast-downward.py')
-        cmd = ['python', downward, '--plan-file', plan_filename, '--alias', 'lama-first',
+        assert sys.executable, "Path to interpreter could not be found"
+        cmd = [sys.executable, downward, '--plan-file', plan_filename, '--alias', 'lama-first',
                domain_filename, problem_filename]
         return cmd
 
@@ -69,7 +71,8 @@ class FastDownwardOptimalPDDLSolver(PDDLSolver):
                  problem_filename: str, plan_filename: str) -> List[str]:
         downward = pkg_resources.resource_filename(__name__,
                                                    'downward/fast-downward.py')
-        cmd = [downward, '--plan-file', plan_filename, domain_filename, problem_filename, '--search',
+        assert sys.executable, "Path to interpreter could not be found"
+        cmd = [sys.executable, downward, '--plan-file', plan_filename, domain_filename, problem_filename, '--search',
                 'astar(lmcut())']
         return cmd
 
