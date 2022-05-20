@@ -90,7 +90,7 @@ jobs:
 
       - run: ls dist
 
-      - name: Upload to TestPyPI
+      - name: Upload to PyPI
         uses: pypa/gh-action-pypi-publish@master
         with:
           user: __token__
