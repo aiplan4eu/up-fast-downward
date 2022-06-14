@@ -52,7 +52,7 @@ class FastDownwardPDDLPlanner(PDDLPlanner):
         return False
 
     @staticmethod
-    def supported_kind() -> bool:
+    def supported_kind() -> 'ProblemKind':
         supported_kind = ProblemKind()
         supported_kind.set_problem_class('ACTION_BASED')
         supported_kind.set_typing('FLAT_TYPING')
@@ -99,7 +99,7 @@ class FastDownwardOptimalPDDLPlanner(PDDLPlanner):
             return PlanGenerationResultStatus.SOLVED_OPTIMALLY
 
     @staticmethod
-    def supported_kind() -> bool:
+    def supported_kind() -> 'ProblemKind':
         # TODO metrics MinimizeActionCosts and MinimizeSequentialPlanLength
         supported_kind = ProblemKind()
         supported_kind.set_problem_class('ACTION_BASED')
