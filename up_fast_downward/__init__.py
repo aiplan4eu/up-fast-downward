@@ -1,1 +1,1 @@
-from .fast_downward import FastDownwardPDDLSolver, FastDownwardOptimalPDDLSolver
+from .fast_downward import FastDownwardPDDLPlanner, FastDownwardOptimalPDDLPlanner
