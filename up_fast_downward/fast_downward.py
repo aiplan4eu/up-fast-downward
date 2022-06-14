@@ -79,6 +79,10 @@ class FastDownwardOptimalPDDLPlanner(PDDLPlanner):
     def name(self) -> str:
         return 'Fast Downward (with optimality guarantee)'
 
+    @staticmethod
+    def get_credits(**kwargs) -> Optional['Credits']:
+        return credits
+
     def _get_cmd(self, domain_filename: str,
                  problem_filename: str, plan_filename: str) -> List[str]:
         downward = pkg_resources.resource_filename(__name__,
