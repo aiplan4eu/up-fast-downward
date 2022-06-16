@@ -4,21 +4,31 @@ import unified_planning as up
 
 from typing import List, Optional, Union
 from unified_planning.model import ProblemKind
-from unified_planning.solvers import OptimalityGuarantee, PlanGenerationResultStatus
-from unified_planning.solvers import PDDLSolver
+from unified_planning.engines import OptimalityGuarantee, PlanGenerationResultStatus
+from unified_planning.engines import PDDLPlanner, Credits
 
 
-class FastDownwardPDDLSolver(PDDLSolver):
+credits = Credits('Fast Downward',
+                  'Uni Basel team and contributors (cf. https://github.com/aibasel/downward/blob/main/README.md)',
+                  'gabriele.roeger@unibas.ch',
+                  'https://www.fast-downward.org',
+                  'GPLv3',
+                  'Fast Downward is a domain-independent classical planning system.',
+                  'Fast Downward is a domain-independent classical planning system.')
+
+
+class FastDownwardPDDLPlanner(PDDLPlanner):
 
     def __init__(self):
         super().__init__()
 
-    def destroy(self):
-        pass
-
     @property
     def name(self) -> str:
         return 'Fast Downward'
+
+    @staticmethod
+    def get_credits(**kwargs) -> Optional['Credits']:
+        return credits
 
     def _get_cmd(self, domain_filename: str,
                  problem_filename: str, plan_filename: str) -> List[str]:
@@ -36,14 +46,15 @@ class FastDownwardPDDLSolver(PDDLSolver):
             return PlanGenerationResultStatus.SOLVED_SATISFICING
 
     @staticmethod
-    def satisfies(optimality_guarantee: Union[int, str]) -> bool:
+    def satisfies(optimality_guarantee: 'OptimalityGuarantee') -> bool:
         if optimality_guarantee == OptimalityGuarantee.SATISFICING:
             return True
         return False
 
     @staticmethod
-    def supports(problem_kind: 'ProblemKind') -> bool:
+    def supported_kind() -> 'ProblemKind':
         supported_kind = ProblemKind()
+        supported_kind.set_problem_class('ACTION_BASED')
         supported_kind.set_typing('FLAT_TYPING')
         supported_kind.set_conditions_kind('NEGATIVE_CONDITIONS')
         supported_kind.set_conditions_kind('DISJUNCTIVE_CONDITIONS')
@@ -51,21 +62,26 @@ class FastDownwardPDDLSolver(PDDLSolver):
         supported_kind.set_conditions_kind('UNIVERSAL_CONDITIONS')
         supported_kind.set_conditions_kind('EQUALITY')
         supported_kind.set_effects_kind('CONDITIONAL_EFFECTS')
-        return problem_kind <= supported_kind
+        return supported_kind
+
+    @staticmethod
+    def supports(problem_kind: 'ProblemKind') -> bool:
+        return problem_kind <= FastDownwardPDDLPlanner.supported_kind()
 
 
 
-class FastDownwardOptimalPDDLSolver(PDDLSolver):
+class FastDownwardOptimalPDDLPlanner(PDDLPlanner):
 
     def __init__(self):
         super().__init__()
 
-    def destroy(self):
-        pass
-
     @property
     def name(self) -> str:
         return 'Fast Downward (with optimality guarantee)'
+
+    @staticmethod
+    def get_credits(**kwargs) -> Optional['Credits']:
+        return credits
 
     def _get_cmd(self, domain_filename: str,
                  problem_filename: str, plan_filename: str) -> List[str]:
@@ -83,19 +99,22 @@ class FastDownwardOptimalPDDLSolver(PDDLSolver):
             return PlanGenerationResultStatus.SOLVED_OPTIMALLY
 
     @staticmethod
-    def supports(problem_kind: 'ProblemKind') -> bool:
+    def supported_kind() -> 'ProblemKind':
         # TODO metrics MinimizeActionCosts and MinimizeSequentialPlanLength
         supported_kind = ProblemKind()
+        supported_kind.set_problem_class('ACTION_BASED')
         supported_kind.set_typing('FLAT_TYPING')
         supported_kind.set_conditions_kind('NEGATIVE_CONDITIONS')
         supported_kind.set_conditions_kind('DISJUNCTIVE_CONDITIONS')
         supported_kind.set_conditions_kind('EXISTENTIAL_CONDITIONS')
         supported_kind.set_conditions_kind('UNIVERSAL_CONDITIONS')
         supported_kind.set_conditions_kind('EQUALITY')
-        return problem_kind <= supported_kind
+        return supported_kind
 
     @staticmethod
-    def satisfies(optimality_guarantee: Union[int, str]) -> bool:
-        if optimality_guarantee in OptimalityGuarantee:
-            return True
-        return False
+    def supports(problem_kind: 'ProblemKind') -> bool:
+        return problem_kind <= FastDownwardOptimalPDDLPlanner.supported_kind()
+
+    @staticmethod
+    def satisfies(optimality_guarantee: OptimalityGuarantee) -> bool:
+        return True
