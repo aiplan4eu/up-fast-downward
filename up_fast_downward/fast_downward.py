@@ -9,7 +9,7 @@ from unified_planning.engines import PDDLPlanner, Credits
 
 
 credits = Credits('Fast Downward',
-                  'UNIBAS Team',
+                  'Uni Basel team and contributors (cf. https://github.com/aibasel/downward/blob/main/README.md)',
                   'gabriele.roeger@unibas.ch',
                   'https://www.fast-downward.org',
                   'GPLv3',
