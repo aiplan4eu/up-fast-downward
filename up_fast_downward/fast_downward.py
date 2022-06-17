@@ -6,6 +6,7 @@ from typing import List, Optional, Union
 from unified_planning.model import ProblemKind
 from unified_planning.engines import OptimalityGuarantee, PlanGenerationResultStatus
 from unified_planning.engines import PDDLPlanner, Credits
+from unified_planning.exceptions import UPUsageError
 
 
 credits = Credits('Fast Downward',
@@ -19,8 +20,15 @@ credits = Credits('Fast Downward',
 
 class FastDownwardPDDLPlanner(PDDLPlanner):
 
-    def __init__(self):
+    def __init__(self, alias=None, search=None, evaluators=[]):
         super().__init__()
+        self.alias = alias
+        self.search = search
+        self.evaluators = evaluators
+        if self.search and self.alias:
+            raise UPUsageError("If you specify an alias, you cannot also specify the search in Fast Downward.")
+        if self.search is None and self.alias is None:
+            self.alias = "lama-first"
 
     @property
     def name(self) -> str:
@@ -35,8 +43,17 @@ class FastDownwardPDDLPlanner(PDDLPlanner):
         downward = pkg_resources.resource_filename(__name__,
                                                    'downward/fast-downward.py')
         assert sys.executable, "Path to interpreter could not be found"
-        cmd = [sys.executable, downward, '--plan-file', plan_filename, '--alias', 'lama-first',
-               domain_filename, problem_filename]
+        if self.alias:
+            cmd = [sys.executable, downward, '--plan-file', plan_filename, '--alias', 'lama-first',
+                    domain_filename, problem_filename]
+        else:
+            assert self.search is not None
+            evaluators = []
+            for evaluator in self.evaluators:
+                evaluators.append("--evaluator")
+                evaluators.append(evaluator)
+            cmd = [sys.executable, downward, '--plan-file', plan_filename,
+                    domain_filename, problem_filename] + evaluators + ['--search', self.search]
         return cmd
 
     def _result_status(self, problem: 'up.model.Problem', plan: Optional['up.plan.Plan']) -> int:
