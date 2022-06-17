@@ -1,6 +1,6 @@
 # Integration of Fast Downward with the Unified Planning Library
 
-![Fast Downard Logo](https://github.com/aibasel/downward/blob/main/misc/images/fast-downward.svg "Fast Downward Logo")
+![Fast Downward Logo](https://github.com/aibasel/downward/blob/main/misc/images/fast-downward.svg "Fast Downward Logo")
 
 The aim of this project is to make the [Fast
 Downward](https://www.fast-downward.org/) planning engine available in the
@@ -23,7 +23,7 @@ pip install unified-planning[fast-downward]
 
 If you need several solvers, you can list them all within the brackets.
 
-You can also install the Fast Downward integration separately (in case, the current version of unified_planning does not include Fast Downward or you want to add it later to your unified planning installation). With
+You can also install the Fast Downward integration separately (in case the current version of unified_planning does not include Fast Downward or you want to add it later to your unified planning installation). With
 
 ```
 pip install up-fast-downward
@@ -37,9 +37,9 @@ pip install up-fast-downward==<version number>
 
 ### Manual installation
 
-With the manual installation, the installation will obtain the Fast Downward sources and build them from scratch. This will take some time and you have to install the necessary dependencies in advance.
+The manual installation will obtain the Fast Downward sources and build them from scratch. This will take some time and you have to install the necessary dependencies in advance.
 
-1. Install the dependencies as descibed at the [Fast Downward website](https://www.fast-downward.org/ObtainingAndRunningFastDownward).
+1. Install the dependencies as described at the [Fast Downward website](https://www.fast-downward.org/ObtainingAndRunningFastDownward).
     For Windows, you also need to add patch (```pip install patch```).
 1. Obtain the integration code from [Github](https://github.com/aiplan4eu/up-fast-downward).
 1. Install with ```pip install up-fast-downward/``` (calling pip install on the directory with the code).
@@ -64,9 +64,9 @@ problem = Problem('myproblem')
 planner = OneshotPlanner(name="fast-downward")
 result = planner.solve(problem)
 if result.status == PlanGenerationResultStatus.SOLVED_SATISFICING:
-  print(f'{Found a plan.\nThe plan is: {result.plan}')
+    print(f'{Found a plan.\nThe plan is: {result.plan}')
 else:
-  print("No plan found.")
+    print("No plan found.")
 ```
 
 ## Current state of the system and ongoing development
