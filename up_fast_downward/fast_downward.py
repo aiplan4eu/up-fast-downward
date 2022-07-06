@@ -1,34 +1,38 @@
 import pkg_resources
 import sys
-import unified_planning as up
+from typing import List, Optional
 
-from typing import List, Optional, Union
+import unified_planning as up
 from unified_planning.model import ProblemKind
-from unified_planning.engines import OptimalityGuarantee, PlanGenerationResultStatus
+from unified_planning.engines import OptimalityGuarantee
+from unified_planning.engines import PlanGenerationResultStatus
 from unified_planning.engines import PDDLPlanner, Credits
 from unified_planning.exceptions import UPUsageError
 
 
-credits = Credits('Fast Downward',
-                  'Uni Basel team and contributors (cf. https://github.com/aibasel/downward/blob/main/README.md)',
-                  'gabriele.roeger@unibas.ch',
-                  'https://www.fast-downward.org',
-                  'GPLv3',
-                  'Fast Downward is a domain-independent classical planning system.',
-                  'Fast Downward is a domain-independent classical planning system.')
+credits = Credits(
+        'Fast Downward',
+        ('Uni Basel team and contributors (cf. '
+         'https://github.com/aibasel/downward/blob/main/README.md)'),
+        'gabriele.roeger@unibas.ch',
+        'https://www.fast-downward.org',
+        'GPLv3',
+        'Fast Downward is a domain-independent classical planning system.',
+        'Fast Downward is a domain-independent classical planning system.')
 
 
 class FastDownwardPDDLPlanner(PDDLPlanner):
 
     def __init__(self, alias=None, search=None, evaluators=[]):
         super().__init__()
-        self.alias = alias
-        self.search = search
-        self.evaluators = evaluators
-        if self.search and self.alias:
-            raise UPUsageError("If you specify an alias, you cannot also specify the search in Fast Downward.")
-        if self.search is None and self.alias is None:
-            self.alias = "lama-first"
+        self._alias = alias
+        self._search = search
+        self._evaluators = evaluators
+        if self._search and self._alias:
+            raise UPUsageError("If you specify an alias, you cannot"
+                               "also specify the search in Fast Downward.")
+        if self._search is None and self._alias is None:
+            self._alias = "lama-first"
 
     @property
     def name(self) -> str:
@@ -43,20 +47,23 @@ class FastDownwardPDDLPlanner(PDDLPlanner):
         downward = pkg_resources.resource_filename(__name__,
                                                    'downward/fast-downward.py')
         assert sys.executable, "Path to interpreter could not be found"
-        if self.alias:
-            cmd = [sys.executable, downward, '--plan-file', plan_filename, '--alias', 'lama-first',
-                    domain_filename, problem_filename]
+        if self._alias:
+            cmd = [sys.executable, downward, '--plan-file', plan_filename,
+                   '--alias', self._alias, domain_filename, problem_filename]
         else:
-            assert self.search is not None
+            assert self._search is not None
             evaluators = []
-            for evaluator in self.evaluators:
+            for evaluator in self._evaluators:
                 evaluators.append("--evaluator")
                 evaluators.append(evaluator)
             cmd = [sys.executable, downward, '--plan-file', plan_filename,
-                    domain_filename, problem_filename] + evaluators + ['--search', self.search]
+                   domain_filename, problem_filename]
+            cmd += evaluators
+            cmd += ['--search', self._search]
         return cmd
 
-    def _result_status(self, problem: 'up.model.Problem', plan: Optional['up.plan.Plan']) -> int:
+    def _result_status(self, problem: 'up.model.Problem',
+                       plan: Optional['up.plan.Plan']) -> int:
         if plan is None:
             return PlanGenerationResultStatus.UNSOLVABLE_INCOMPLETELY
         else:
@@ -86,7 +93,6 @@ class FastDownwardPDDLPlanner(PDDLPlanner):
         return problem_kind <= FastDownwardPDDLPlanner.supported_kind()
 
 
-
 class FastDownwardOptimalPDDLPlanner(PDDLPlanner):
 
     def __init__(self):
@@ -105,11 +111,13 @@ class FastDownwardOptimalPDDLPlanner(PDDLPlanner):
         downward = pkg_resources.resource_filename(__name__,
                                                    'downward/fast-downward.py')
         assert sys.executable, "Path to interpreter could not be found"
-        cmd = [sys.executable, downward, '--plan-file', plan_filename, domain_filename, problem_filename, '--search',
-                'astar(lmcut())']
+        cmd = [sys.executable, downward, '--plan-file', plan_filename,
+               domain_filename, problem_filename, '--search',
+               'astar(lmcut())']
         return cmd
 
-    def _result_status(self, problem: 'up.model.Problem', plan: Optional['up.plan.Plan']) -> int:
+    def _result_status(self, problem: 'up.model.Problem',
+                       plan: Optional['up.plan.Plan']) -> int:
         if plan is None:
             return PlanGenerationResultStatus.UNSOLVABLE_PROVEN
         else:
@@ -117,6 +125,8 @@ class FastDownwardOptimalPDDLPlanner(PDDLPlanner):
 
     @staticmethod
     def supported_kind() -> 'ProblemKind':
+        # TODO this actually depends on the parameters, which we don't know in
+        # a static method.
         # TODO metrics MinimizeActionCosts and MinimizeSequentialPlanLength
         supported_kind = ProblemKind()
         supported_kind.set_problem_class('ACTION_BASED')
@@ -126,6 +136,7 @@ class FastDownwardOptimalPDDLPlanner(PDDLPlanner):
         supported_kind.set_conditions_kind('EXISTENTIAL_CONDITIONS')
         supported_kind.set_conditions_kind('UNIVERSAL_CONDITIONS')
         supported_kind.set_conditions_kind('EQUALITY')
+        supported_kind.set_effects_kind('CONDITIONAL_EFFECTS')
         return supported_kind
 
     @staticmethod
