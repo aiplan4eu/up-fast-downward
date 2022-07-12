@@ -102,7 +102,6 @@ class FastDownwardOptimalPDDLPlanner(PDDLPlanner):
 
     @staticmethod
     def supported_kind() -> 'ProblemKind':
-        # TODO metrics MinimizeActionCosts and MinimizeSequentialPlanLength
         supported_kind = ProblemKind()
         supported_kind.set_problem_class('ACTION_BASED')
         supported_kind.set_typing('FLAT_TYPING')
@@ -111,6 +110,8 @@ class FastDownwardOptimalPDDLPlanner(PDDLPlanner):
         supported_kind.set_conditions_kind('EXISTENTIAL_CONDITIONS')
         supported_kind.set_conditions_kind('UNIVERSAL_CONDITIONS')
         supported_kind.set_conditions_kind('EQUALITY')
+        supported_kind.set_quality_metrics("ACTIONS_COST")
+        supported_kind.set_quality_metrics("PLAN_LENGTH")
         return supported_kind
 
     @staticmethod
