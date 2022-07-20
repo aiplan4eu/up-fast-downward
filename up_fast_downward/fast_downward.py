@@ -39,11 +39,33 @@ class FastDownwardPDDLPlanner(PDDLPlanner):
                domain_filename, problem_filename]
         return cmd
 
-    def _result_status(self, problem: 'up.model.Problem', plan: Optional['up.plan.Plan']) -> int:
-        if plan is None:
+    def _result_status(
+        self,
+        problem: "up.model.Problem",
+        plan: Optional["up.plans.Plan"],
+        retval: int = None, # Default value for legacy support
+        #log_messages: Optional[List[LogMessage]] = None,
+        log_messages = None,
+        ) -> "up.engines.results.PlanGenerationResultStatus":
+
+        # https://www.fast-downward.org/ExitCodes
+        if retval is None: # legacy support
+            if plan is None:
+                return PlanGenerationResultStatus.UNSOLVABLE_INCOMPLETELY
+            else:
+                return PlanGenerationResultStatus.SOLVED_SATISFICING
+        if retval in (0, 1, 2, 3):
+            if plan is None:
+                # Should not be possible after portfolios have been fixed
+                return PlanGenerationResultStatus.UNSOLVABLE_INCOMPLETELY
+            else:
+                return PlanGenerationResultStatus.SOLVED_SATISFICING
+        if retval in (10, 11):
+            return PlanGenerationResultStatus.UNSOLVABLE_PROVEN
+        if retval == 12:
             return PlanGenerationResultStatus.UNSOLVABLE_INCOMPLETELY
         else:
-            return PlanGenerationResultStatus.SOLVED_SATISFICING
+            return up.engines.results.PlanGenerationResultStatus.INTERNAL_ERROR
 
     @staticmethod
     def satisfies(optimality_guarantee: 'OptimalityGuarantee') -> bool:
@@ -94,11 +116,28 @@ class FastDownwardOptimalPDDLPlanner(PDDLPlanner):
                 'astar(lmcut())']
         return cmd
 
-    def _result_status(self, problem: 'up.model.Problem', plan: Optional['up.plan.Plan']) -> int:
-        if plan is None:
-            return PlanGenerationResultStatus.UNSOLVABLE_PROVEN
-        else:
+    def _result_status(
+        self,
+        problem: "up.model.Problem",
+        plan: Optional["up.plans.Plan"],
+        retval: int = None, # Default value for legacy support
+        #log_messages: Optional[List[LogMessage]] = None,
+        log_messages = None,
+        ) -> "up.engines.results.PlanGenerationResultStatus":
+        # https://www.fast-downward.org/ExitCodes
+        if retval is None: # legacy support
+            if plan is None:
+                return PlanGenerationResultStatus.UNSOLVABLE_PROVEN
+            else:
+                return PlanGenerationResultStatus.SOLVED_OPTIMALLY
+        if retval in (0, 1, 2, 3):
             return PlanGenerationResultStatus.SOLVED_OPTIMALLY
+        if retval in (10, 11):
+            return PlanGenerationResultStatus.UNSOLVABLE_PROVEN
+        if retval == 12:
+            return PlanGenerationResultStatus.UNSOLVABLE_INCOMPLETELY
+        else:
+            return PlanGenerationResultStatus.INTERNAL_ERROR
 
     @staticmethod
     def supported_kind() -> 'ProblemKind':
