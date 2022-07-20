@@ -36,9 +36,6 @@ jobs:
       - name: Install wheel
         run: pip install wheel
 
-      - name: Install patch
-        run: pip install patch
-
       - name: Build wheel
         shell: cmd
         run: |

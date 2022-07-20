@@ -30,27 +30,24 @@ except ImportError:
 
 
 FAST_DOWNWARD_REPO = 'https://github.com/aibasel/downward.git'
-FAST_DOWNWARD_RELEASE = 'release-21.12'
+# FAST_DOWNWARD_RELEASE = 'release-21.12'
+FAST_DOWNWARD_RELEASE = None
+# CHANGESET is ignored if release is set
+FAST_DOWNWARD_CHANGESET = '06ca69aa9f8d8c0e36b5bea15d76aeb10a8288ca'
 
 
 def clone_and_compile_fast_downward():
     curr_dir = os.getcwd()
     print("Cloning Fast Downward repository...")
-    subprocess.run(['git', 'clone', '-b', FAST_DOWNWARD_RELEASE, FAST_DOWNWARD_REPO])
-    shutil.move('downward', 'up_fast_downward/downward')
-    if sys.platform.startswith("win"):
-        import patch
-        patchset1 = patch.fromfile('skip_pycache.patch')
-        patchset2 = patch.fromfile('add_build_config.patch')
-        os.chdir('up_fast_downward/downward')
-        patchset1.apply()
-        patchset2.apply()
+    if FAST_DOWNWARD_RELEASE is not None:
+        subprocess.run(['git', 'clone', '-b', FAST_DOWNWARD_RELEASE, FAST_DOWNWARD_REPO])
     else:
-        subprocess.run(['patch', 'up_fast_downward/downward/driver/aliases.py',
-            'skip_pycache.patch'])
-        subprocess.run(['patch', 'up_fast_downward/downward/build_configs.py',
-            'add_build_config.patch'])
-        os.chdir('up_fast_downward/downward')
+        subprocess.run(['git', 'clone', FAST_DOWNWARD_REPO])
+
+    shutil.move('downward', 'up_fast_downward/downward')
+    os.chdir('up_fast_downward/downward')
+    if FAST_DOWNWARD_RELEASE is None:
+        subprocess.run(['git', 'checkout', FAST_DOWNWARD_CHANGESET])
     print("Building Fast Downward (this can take some time)...")
     build = subprocess.run(['python', 'build.py'])
     os.chdir(curr_dir)
@@ -100,6 +97,5 @@ setup(name='up_fast_downward',
           'build_py': install_fast_downward,
           'develop': install_fast_downward_develop,
       },
-      install_requires=["patch;platform_system=='Windows'"],
       has_ext_modules=lambda: True
       )
