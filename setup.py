@@ -33,7 +33,7 @@ FAST_DOWNWARD_REPO = 'https://github.com/aibasel/downward.git'
 # FAST_DOWNWARD_RELEASE = 'release-21.12'
 FAST_DOWNWARD_RELEASE = None
 # CHANGESET is ignored if release is set
-FAST_DOWNWARD_CHANGESET = '06ca69aa9f8d8c0e36b5bea15d76aeb10a8288ca'
+FAST_DOWNWARD_CHANGESET = '641d70b3642fff29fc27ed96b47e7635ca155e6b'
 
 
 def clone_and_compile_fast_downward():
@@ -84,7 +84,9 @@ setup(name='up_fast_downward',
                    ],
       packages=['up_fast_downward'],
       package_data={
-          "": ['fast_downward.py', 'downward/fast-downward.py',
+          "": ['fast_downward.py',
+              'fast_downward_grounder.py'
+              'downward/fast-downward.py',
               'downward/README.md', 'downward/LICENSE.md',
               'downward/builds/release/bin/*',
               'downward/builds/release/bin/translate/*',

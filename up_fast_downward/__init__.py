@@ -1,1 +1,2 @@
 from .fast_downward import FastDownwardPDDLPlanner, FastDownwardOptimalPDDLPlanner
+from .fast_downward_grounder import FastDownwardGrounder
