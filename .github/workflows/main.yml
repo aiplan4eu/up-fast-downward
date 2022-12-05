@@ -47,21 +47,50 @@ jobs:
 #          name: windows-wheel
 #          path: dist
 
-
-  build-macos:
-    runs-on: macos-11
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macOS-11]
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - name: Build wheel
-        run: python3 setup.py bdist_wheel
+      # Used to host cibuildwheel
+      - uses: actions/setup-python@v3
 
-      - uses: actions/upload-artifact@master
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel==2.11.2
+
+      - name: Build wheels
+        run: python -m cibuildwheel --output-dir dist
+        # to supply options, put them in 'env', like:
+        # env:
+        #   CIBW_SOME_OPTION: value
+
+      - uses: actions/upload-artifact@v3
         with:
           name: macos-wheel
           path: dist
+#      - uses: actions/upload-artifact@v3
+#        with:
+#          path: ./wheelhouse/*.whl
+
+#  build-macos:
+#    runs-on: macos-11
+#
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#
+#      - name: Build wheel
+#        run: python3 setup.py bdist_wheel
+#
+#      - uses: actions/upload-artifact@master
+#        with:
+#          name: macos-wheel
+#          path: dist
 
 
 #  deploy-pypi:
