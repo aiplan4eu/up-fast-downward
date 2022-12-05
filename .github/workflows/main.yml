@@ -3,22 +3,22 @@ name: Deploy
 on: push
 
 jobs:
-#  build-linux:
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v2
-#
-#      - name: Build manylinux Python wheels
-#        uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux2014_x86_64
-#        with:
-#          python-versions: 'cp36-cp36m cp37-cp37m'
-#
-#      - uses: actions/upload-artifact@master
-#        with:
-#          name: linux-wheel
-#          path: dist/*-manylinux*.whl
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build manylinux Python wheels
+        uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux2014_x86_64
+        with:
+          python-versions: 'cp36-cp36m cp37-cp37m'
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: linux-wheel
+          path: dist/*-manylinux*.whl
 #
 #
 #  build-windows:
@@ -52,7 +52,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macOS-11, ubuntu-22.04, windows-2022]
+        os: [macOS-11, windows-2022]
 
     steps:
       - uses: actions/checkout@v3
