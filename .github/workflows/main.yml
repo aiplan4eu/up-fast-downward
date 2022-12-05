@@ -52,7 +52,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macOS-11]
+        os: [macOS-11, ubuntu-22.04, windows-2022]
 
     steps:
       - uses: actions/checkout@v3
@@ -71,8 +71,7 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: macos-wheel
-          path: dist
+          path: ./dist/*.whl
 #      - uses: actions/upload-artifact@v3
 #        with:
 #          path: ./wheelhouse/*.whl
