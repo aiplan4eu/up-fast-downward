@@ -125,14 +125,22 @@ class FastDownwardOptimalPDDLPlanner(PDDLPlanner):
         #log_messages: Optional[List[LogMessage]] = None,
         log_messages = None,
         ) -> "up.engines.results.PlanGenerationResultStatus":
+
+        def solved(metrics):
+            if metrics:
+                return PlanGenerationResultStatus.SOLVED_OPTIMALLY
+            else:
+                return PlanGenerationResultStatus.SOLVED_SATISFICING
+
         # https://www.fast-downward.org/ExitCodes
+        metrics = problem.quality_metrics
         if retval is None: # legacy support
             if plan is None:
                 return PlanGenerationResultStatus.UNSOLVABLE_PROVEN
             else:
-                return PlanGenerationResultStatus.SOLVED_OPTIMALLY
+                return solved(metrics)
         if retval in (0, 1, 2, 3):
-            return PlanGenerationResultStatus.SOLVED_OPTIMALLY
+            return solved(metrics)
         if retval in (10, 11):
             return PlanGenerationResultStatus.UNSOLVABLE_PROVEN
         if retval == 12:
