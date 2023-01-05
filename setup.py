@@ -30,9 +30,8 @@ except ImportError:
 
 
 FAST_DOWNWARD_REPO = 'https://github.com/aibasel/downward.git'
-# FAST_DOWNWARD_RELEASE = 'release-21.12'
-FAST_DOWNWARD_RELEASE = None
-# CHANGESET is ignored if release is set
+FAST_DOWNWARD_RELEASE = 'release-22.12'
+# CHANGESET is ignored if release is not None
 FAST_DOWNWARD_CHANGESET = '06ca69aa9f8d8c0e36b5bea15d76aeb10a8288ca'
 
 
