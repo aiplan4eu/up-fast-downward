@@ -40,7 +40,6 @@ pip install up-fast-downward==<version number>
 The manual installation will obtain the Fast Downward sources and build them from scratch. This will take some time and you have to install the necessary dependencies in advance.
 
 1. Install the dependencies as described at the [Fast Downward website](https://www.fast-downward.org/ObtainingAndRunningFastDownward).
-    For Windows, you also need to add patch (```pip install patch```).
 1. Obtain the integration code from [Github](https://github.com/aiplan4eu/up-fast-downward).
 1. Install with ```pip install up-fast-downward/``` (calling pip install on the directory with the code).
 
