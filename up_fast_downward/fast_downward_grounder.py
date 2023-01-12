@@ -3,7 +3,7 @@ import sys
 import unified_planning as up
 from functools import partial
 
-from typing import Optional
+from typing import Callable, Optional, Union
 from unified_planning.model import FNode, Problem, ProblemKind
 from unified_planning.model.action import InstantaneousAction
 from unified_planning.engines.compilers.utils import lift_action_instance
@@ -90,9 +90,21 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         features = set.difference(orig_features, {"DISJUNCTIVE_CONDITIONS"})
         return ProblemKind(features)
 
-    def _get_fnode(self, fact, problem: "up.model.AbstractProblem") -> FNode:
+    def _get_fnode(
+        self, fact, problem: "up.model.AbstractProblem",
+        get_item_named: Callable[
+         [str],
+         Union[
+             "up.model.Type",
+             "up.model.Action",
+             "up.model.Fluent",
+             "up.model.Object",
+             "up.model.Parameter",
+             "up.model.Variable",
+         ]]
+    ) -> FNode:
         exp_manager = problem.env.expression_manager
-        fluent = problem.fluent(fact.predicate)
+        fluent = get_item_named(fact.predicate)
         args = [problem.object(o) for o in fact.args]
         fnode = exp_manager.FluentExp(fluent, args)
         if fact.negated:
@@ -100,19 +112,32 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         else:
             return fnode
 
-    def _transform_action(self, fd_action,
-                          problem: "up.model.AbstractProblem"
-                          ) -> InstantaneousAction:
+    def _transform_action(
+        self, fd_action, problem: "up.model.AbstractProblem",
+        get_item_named: Callable[
+            [str],
+            Union[
+                "up.model.Type",
+                "up.model.Action",
+                "up.model.Fluent",
+                "up.model.Object",
+                "up.model.Parameter",
+                "up.model.Variable",
+                ],
+            ]
+    ) -> InstantaneousAction:
+        def fnode(fact):
+            return self._get_fnode(fact, problem, get_item_named)
         exp_manager = problem.env.expression_manager
         action = InstantaneousAction(fd_action.name.replace(" ", "_"))
         for fact in fd_action.precondition:
-            action.add_precondition(self._get_fnode(fact, problem))
+            action.add_precondition(fnode(fact))
         for cond, fact in fd_action.add_effects:
-            c = exp_manager.And(self._get_fnode(f, problem) for f in cond)
-            action.add_effect(self._get_fnode(fact, problem), True, c)
+            c = exp_manager.And(fnode(f) for f in cond)
+            action.add_effect(fnode(fact), True, c)
         for cond, fact in fd_action.del_effects:
-            c = exp_manager.And(self._get_fnode(f, problem) for f in cond)
-            action.add_effect(self._get_fnode(fact, problem), False, c)
+            c = exp_manager.And(fnode(f) for f in cond)
+            action.add_effect(fnode(fact), False, c)
         return action
 
     def _compile(
@@ -167,12 +192,14 @@ class FastDownwardGrounder(Engine, CompilerMixin):
             name_and_args = a.name[1:-1].split()
             schematic_action = problem.action(name_and_args[0])
             args = [problem.object(o) for o in name_and_args[1:]]
-            inst_action = self._transform_action(a, new_problem)
+            inst_action = self._transform_action(a, new_problem,
+                                                 writer.get_item_named)
             trace_back_map[inst_action] = (schematic_action, args)
             new_problem.add_action(inst_action)
 
         for g in goals:
-            new_problem.add_goal(self._get_fnode(g, new_problem))
+            fnode = self._get_fnode(g, new_problem, writer.get_item_named)
+            new_problem.add_goal(fnode)
         sys.path = orig_path
 
         return CompilerResult(
