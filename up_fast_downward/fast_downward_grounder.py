@@ -1,12 +1,15 @@
+from collections import defaultdict
 import os.path
 import sys
 import unified_planning as up
 from functools import partial
+from typing import Dict, Tuple, List
 
 from typing import Callable, Optional, Union
-from unified_planning.model import FNode, Problem, ProblemKind
+from unified_planning.model import Action, FNode, Problem, ProblemKind
 from unified_planning.model.action import InstantaneousAction
 from unified_planning.engines.compilers.utils import lift_action_instance
+from unified_planning.engines.compilers.grounder import GrounderHelper
 from unified_planning.engines.engine import Engine
 from unified_planning.engines import Credits
 from unified_planning.engines.mixins.compiler import CompilationKind
@@ -30,6 +33,125 @@ axioms_msg = """ Grounding this problem introduces axioms.
 Does the problem use existantial quantification and negation that corresponds
 to universal quantification (in negation normal form)?
 """
+
+
+class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
+    def __init__(self):
+        Engine.__init__(self)
+        CompilerMixin.__init__(self, CompilationKind.GROUNDING)
+
+    @property
+    def name(self) -> str:
+        return 'Fast Downward Reachability Grounder'
+
+    @staticmethod
+    def get_credits(**kwargs) -> Optional['Credits']:
+        return credits
+
+    @staticmethod
+    def supported_kind() -> ProblemKind:
+        supported_kind = ProblemKind()
+        supported_kind.set_problem_class("ACTION_BASED")
+        supported_kind.set_typing("FLAT_TYPING")
+        supported_kind.set_typing("HIERARCHICAL_TYPING")
+        supported_kind.set_conditions_kind("NEGATIVE_CONDITIONS")
+        supported_kind.set_conditions_kind("DISJUNCTIVE_CONDITIONS")
+        supported_kind.set_conditions_kind("EQUALITY")
+        supported_kind.set_effects_kind("CONDITIONAL_EFFECTS")
+        supported_kind.set_quality_metrics("ACTIONS_COST")
+        supported_kind.set_quality_metrics("PLAN_LENGTH")
+        supported_kind.set_conditions_kind("UNIVERSAL_CONDITIONS")
+        supported_kind.set_conditions_kind("EXISTENTIAL_CONDITIONS")
+        return supported_kind
+
+    @staticmethod
+    def supports(problem_kind: "up.model.ProblemKind") -> bool:
+        return problem_kind <= FastDownwardGrounder.supported_kind()
+
+    @staticmethod
+    def supports_compilation(compilation_kind: CompilationKind) -> bool:
+        return compilation_kind == CompilationKind.GROUNDING
+
+    @staticmethod
+    def resulting_problem_kind(
+        problem_kind: ProblemKind,
+        compilation_kind: Optional[CompilationKind] = None
+    ) -> ProblemKind:
+        return ProblemKind(problem_kind.features)
+
+    def _compile(
+        self, problem: "up.model.AbstractProblem",
+        compilation_kind: "CompilationKind"
+    ) -> CompilerResult:
+        """
+        Takes an instance of a :class:`~up.model.Problem` and the `GROUNDING`
+        :class:`~up.engines.CompilationKind` and returns a `CompilerResult`
+        where the problem does not have actions with parameters; so every
+        action is grounded.
+        :param problem: The instance of the `Problem` that must be grounded.
+        :param compilation_kind: The `CompilationKind` that must be applied on
+            the given problem; only `GROUNDING` is supported by this compiler
+        :return: The resulting `CompilerResult` data structure.
+        """
+        assert isinstance(problem, Problem)
+
+        writer = up.io.PDDLWriter(problem)
+        pddl_problem = writer.get_problem().split("\n")
+        pddl_domain = writer.get_domain().split("\n")
+
+        orig_path = list(sys.path)
+        path = os.path.join(os.path.dirname(__file__),
+                            "downward/builds/release/bin/translate")
+        sys.path.insert(1, path)
+        import pddl_parser as fast_downward_pddl_parser
+        import normalize as fast_downward_normalize
+        from pddl_to_prolog import translate as prolog_program
+        from build_model import compute_model
+        import pddl
+
+        lisp_parser = fast_downward_pddl_parser.lisp_parser
+        fd_domain = lisp_parser.parse_nested_list(pddl_domain)
+        fd_problem = lisp_parser.parse_nested_list(pddl_problem)
+        parse = fast_downward_pddl_parser.parsing_functions.parse_task
+        task = parse(fd_domain, fd_problem)
+        fast_downward_normalize.normalize(task)
+        prog = prolog_program(task)
+        model = compute_model(prog)
+        grounding_action_map = defaultdict(list)
+        exp_manager = problem.env.expression_manager
+        for atom in model:
+            if isinstance(atom.predicate, pddl.Action):
+                action = atom.predicate
+                schematic_up_action = writer.get_item_named(action.name)
+                params = (writer.get_item_named(p)
+                          for p in atom.args[:len(action.parameters)])
+                up_params = tuple(exp_manager.ObjectExp(p) for p in params)
+                grounding_action_map[schematic_up_action].append(up_params)
+        sys.path = orig_path
+
+        grounder_helper = GrounderHelper(problem,  grounding_action_map)
+        trace_back_map: Dict[Action, Tuple[Action, List[FNode]]] = {}
+
+        new_problem = problem.clone()
+        new_problem.name = f"{self.name}_{problem.name}"
+        new_problem.clear_actions()
+        for (
+            old_action,
+            parameters,
+            new_action,
+        ) in grounder_helper.get_grounded_actions():
+            if new_action is not None:
+                new_problem.add_action(new_action)
+                trace_back_map[new_action] = (old_action, list(parameters))
+
+        return CompilerResult(
+            new_problem,
+            partial(lift_action_instance, map=trace_back_map),
+            self.name,
+        )
+
+    def destroy(self):
+        pass
 
 
 class FastDownwardGrounder(Engine, CompilerMixin):
@@ -161,10 +283,8 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         assert isinstance(problem, Problem)
 
         writer = up.io.PDDLWriter(problem)
-        pddl_problem = writer.get_problem()
-        pddl_problem = pddl_problem.split("\n")
-        pddl_domain = writer.get_domain()
-        pddl_domain = pddl_domain.split("\n")
+        pddl_problem = writer.get_problem().split("\n")
+        pddl_domain = writer.get_domain().split("\n")
 
         orig_path = list(sys.path)
         path = os.path.join(os.path.dirname(__file__),
@@ -187,6 +307,7 @@ class FastDownwardGrounder(Engine, CompilerMixin):
             raise UPUnsupportedProblemTypeError(axioms_msg)
 
         new_problem = problem.clone()
+        new_problem.name = f"{self.name}_{problem.name}"
         new_problem.clear_actions()
         new_problem.clear_goals()
 
