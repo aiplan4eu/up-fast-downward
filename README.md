@@ -45,6 +45,8 @@ The manual installation will obtain the Fast Downward sources and build them fro
 
 ## Usage
 
+### Solving a planning problem
+
 The integration adds Fast Downward with two solver engines in the unified planning framework:
 
 - ```fast-downward``` currently runs Fast Downward in the ```lama-first``` configuration. It does not provide a guarantee on the plan quality but usually find plans quickly (depending on the task).
@@ -68,11 +70,24 @@ else:
     print("No plan found.")
 ```
 
+### Grounding a planning problem
+
+The integration adds two grounding compilers based on Fast Downward to the unified planning framework:
+- ```fast-downward-reachability-grounder``` uses the reachability analysis of Fast Downward to determine the action parameters that need to be instantiated and does not further transform the actions.
+- ```fast-downward-grounder``` grounds a task applying all normalizing transformations also done by the Fast Downward planning system.
+
+Details on the reachability analysis and the normalization can be found in Malte Helmert. [Concise finite-domain representations for PDDL planning tasks](https://ai.dmi.unibas.ch/papers/helmert-aij2009.pdf). Artificial Intelligence 173 (5-6), pp. 503-535. 2009).
+  
+**Note**: Both grounding methods depend on the initial state and do not create some actions that are not reachable from this state. Use the grounded problem only with states of which you know that they are reachable from your original initial state.
+
+**Note**: Do not ground the problem if you subsequently want to use it with a Fast Downward solver. Otherwise it will only repeat some work and some internal processing of Fast Downward (i.e. the invariant synthesis) will be slower than with the ungrounded problem.
+
+
 ## Current state of the system and ongoing development
 
 - Default configuration
     - ```fast-downward``` engine: lama-first (flexible configuration under development)
     - ```fast-downward-opt``` engine: A* search with LMCut heuristic
 - Planning approaches of UP supported: Classical planning
-- Operative modes of UP currently supported: One-shot planning
+- Operative modes of UP currently supported: One-shot planning, Grounding
 - Operative modes of UP under development: Anytime planning

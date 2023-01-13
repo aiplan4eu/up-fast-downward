@@ -1,4 +1,6 @@
 # Release notes
+UP Fast Downward 0.1.0
+- add grounders
 
 UP Fast Downward 0.0.7
 - use Fast Downward 22.12
