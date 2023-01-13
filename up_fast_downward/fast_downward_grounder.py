@@ -129,7 +129,11 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         def fnode(fact):
             return self._get_fnode(fact, problem, get_item_named)
         exp_manager = problem.env.expression_manager
-        action = InstantaneousAction(fd_action.name.replace(" ", "_"))
+
+        name_and_args = fd_action.name[1:-1].split()
+        name = get_item_named(name_and_args[0]).name
+        name_and_args[0] = name
+        action = InstantaneousAction("_".join(name_and_args))
         for fact in fd_action.precondition:
             action.add_precondition(fnode(fact))
         for cond, fact in fd_action.add_effects:
