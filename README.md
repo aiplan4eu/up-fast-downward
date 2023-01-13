@@ -73,8 +73,8 @@ else:
 ### Grounding a planning problem
 
 The integration adds two grounding compilers based on Fast Downward to the unified planning framework:
-- ```fast-downward-reachability-grounding``` uses the reachability analysis of Fast Downward to determine the action parameters that need to be instantiated and does not further transform the actions.
-- ```fast-downward-grounding``` grounds a task applying all normalizing transformations also done by the Fast Downward planning system.
+- ```fast-downward-reachability-grounder``` uses the reachability analysis of Fast Downward to determine the action parameters that need to be instantiated and does not further transform the actions.
+- ```fast-downward-grounder``` grounds a task applying all normalizing transformations also done by the Fast Downward planning system.
 
 Details on the reachability analysis and the normalization can be found in Malte Helmert. [Concise finite-domain representations for PDDL planning tasks](https://ai.dmi.unibas.ch/papers/helmert-aij2009.pdf). Artificial Intelligence 173 (5-6), pp. 503-535. 2009).
   
