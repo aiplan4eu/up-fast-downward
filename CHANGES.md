@@ -1,4 +1,7 @@
 # Release notes
+UP Fast Downward 0.1.1
+- fix broken setup.py
+
 UP Fast Downward 0.1.0
 - add grounders
 
