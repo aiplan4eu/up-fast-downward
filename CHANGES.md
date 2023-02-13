@@ -1,4 +1,8 @@
 # Release notes
+UP Fast Downward 0.1.2
+- follow change in up:
+  rename problem.env into problem.environment
+
 UP Fast Downward 0.1.1
 - fix broken setup.py
 

@@ -118,7 +118,7 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         prog = prolog_program(task)
         model = compute_model(prog)
         grounding_action_map = defaultdict(list)
-        exp_manager = problem.env.expression_manager
+        exp_manager = problem.environment.expression_manager
         for atom in model:
             if isinstance(atom.predicate, pddl.Action):
                 action = atom.predicate
@@ -225,7 +225,7 @@ class FastDownwardGrounder(Engine, CompilerMixin):
              "up.model.Variable",
          ]]
     ) -> FNode:
-        exp_manager = problem.env.expression_manager
+        exp_manager = problem.environment.expression_manager
         fluent = get_item_named(fact.predicate)
         args = [problem.object(o) for o in fact.args]
         fnode = exp_manager.FluentExp(fluent, args)
@@ -250,7 +250,7 @@ class FastDownwardGrounder(Engine, CompilerMixin):
     ) -> InstantaneousAction:
         def fnode(fact):
             return self._get_fnode(fact, problem, get_item_named)
-        exp_manager = problem.env.expression_manager
+        exp_manager = problem.environment.expression_manager
 
         name_and_args = fd_action.name[1:-1].split()
         name = get_item_named(name_and_args[0]).name
