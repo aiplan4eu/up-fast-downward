@@ -4,8 +4,9 @@ import unified_planning as up
 
 from typing import List, Optional, Union
 from unified_planning.model import ProblemKind
-from unified_planning.engines import OptimalityGuarantee, PlanGenerationResultStatus
+from unified_planning.engines import OptimalityGuarantee
 from unified_planning.engines import PDDLPlanner, Credits
+from unified_planning.engines import PlanGenerationResultStatus as ResultStatus
 
 
 credits = Credits('Fast Downward',
@@ -17,10 +18,15 @@ credits = Credits('Fast Downward',
                   'Fast Downward is a domain-independent classical planning system.')
 
 
+
 class FastDownwardPDDLPlanner(PDDLPlanner):
 
     def __init__(self):
         super().__init__()
+        self.fd_alias = 'lama-first'
+        self.fd_search_config = None
+        self.guarantee_no_plan_found = ResultStatus.UNSOLVABLE_INCOMPLETELY
+        self.guarantee_metrics_task = ResultStatus.SOLVED_SATISFICING
 
     @property
     def name(self) -> str:
@@ -35,8 +41,13 @@ class FastDownwardPDDLPlanner(PDDLPlanner):
         downward = pkg_resources.resource_filename(__name__,
                                                    'downward/fast-downward.py')
         assert sys.executable, "Path to interpreter could not be found"
-        cmd = [sys.executable, downward, '--plan-file', plan_filename, '--alias', 'lama-first',
-               domain_filename, problem_filename]
+        assert not (self.fd_alias and self.fd_search_config)
+        cmd = [sys.executable, downward, '--plan-file', plan_filename]
+        if self.fd_alias:
+            cmd += ['--alias', 'lama-first']
+        cmd += [domain_filename, problem_filename]
+        if self.fd_search_config:
+            cmd += ['--search'] + self.fd_search_config.split()
         return cmd
 
     def _result_status(
@@ -48,24 +59,30 @@ class FastDownwardPDDLPlanner(PDDLPlanner):
         log_messages = None,
         ) -> "up.engines.results.PlanGenerationResultStatus":
 
+        def solved(metrics):
+            if metrics:
+                return self.guarantee_metrics_task
+            else:
+                return ResultStatus.SOLVED_SATISFICING
+        
         # https://www.fast-downward.org/ExitCodes
+        metrics = problem.quality_metrics
         if retval is None: # legacy support
             if plan is None:
-                return PlanGenerationResultStatus.UNSOLVABLE_INCOMPLETELY
+                return self.guarantee_no_plan_found
             else:
-                return PlanGenerationResultStatus.SOLVED_SATISFICING
+                return solved(metrics)
         if retval in (0, 1, 2, 3):
             if plan is None:
-                # Should not be possible after portfolios have been fixed
-                return PlanGenerationResultStatus.UNSOLVABLE_INCOMPLETELY
+                return self.guarantee_no_plan_found
             else:
-                return PlanGenerationResultStatus.SOLVED_SATISFICING
+                return solved(metrics)
         if retval in (10, 11):
-            return PlanGenerationResultStatus.UNSOLVABLE_PROVEN
+            return ResultStatus.UNSOLVABLE_PROVEN
         if retval == 12:
-            return PlanGenerationResultStatus.UNSOLVABLE_INCOMPLETELY
+            return ResultStatus.UNSOLVABLE_INCOMPLETELY
         else:
-            return up.engines.results.PlanGenerationResultStatus.INTERNAL_ERROR
+            return ResultStatus.INTERNAL_ERROR
 
     @staticmethod
     def satisfies(optimality_guarantee: 'OptimalityGuarantee') -> bool:
@@ -95,58 +112,18 @@ class FastDownwardPDDLPlanner(PDDLPlanner):
 
 
 
-class FastDownwardOptimalPDDLPlanner(PDDLPlanner):
+class FastDownwardOptimalPDDLPlanner(FastDownwardPDDLPlanner):
 
     def __init__(self):
         super().__init__()
+        self.fd_alias = None
+        self.fd_search_config = "astar(lmcut())"
+        self.guarantee_no_plan_found = ResultStatus.UNSOLVABLE_PROVEN
+        self.guarantee_metrics_task = ResultStatus.SOLVED_OPTIMALLY
 
     @property
     def name(self) -> str:
         return 'Fast Downward (with optimality guarantee)'
-
-    @staticmethod
-    def get_credits(**kwargs) -> Optional['Credits']:
-        return credits
-
-    def _get_cmd(self, domain_filename: str,
-                 problem_filename: str, plan_filename: str) -> List[str]:
-        downward = pkg_resources.resource_filename(__name__,
-                                                   'downward/fast-downward.py')
-        assert sys.executable, "Path to interpreter could not be found"
-        cmd = [sys.executable, downward, '--plan-file', plan_filename, domain_filename, problem_filename, '--search',
-                'astar(lmcut())']
-        return cmd
-
-    def _result_status(
-        self,
-        problem: "up.model.Problem",
-        plan: Optional["up.plans.Plan"],
-        retval: int = None, # Default value for legacy support
-        #log_messages: Optional[List[LogMessage]] = None,
-        log_messages = None,
-        ) -> "up.engines.results.PlanGenerationResultStatus":
-
-        def solved(metrics):
-            if metrics:
-                return PlanGenerationResultStatus.SOLVED_OPTIMALLY
-            else:
-                return PlanGenerationResultStatus.SOLVED_SATISFICING
-
-        # https://www.fast-downward.org/ExitCodes
-        metrics = problem.quality_metrics
-        if retval is None: # legacy support
-            if plan is None:
-                return PlanGenerationResultStatus.UNSOLVABLE_PROVEN
-            else:
-                return solved(metrics)
-        if retval in (0, 1, 2, 3):
-            return solved(metrics)
-        if retval in (10, 11):
-            return PlanGenerationResultStatus.UNSOLVABLE_PROVEN
-        if retval == 12:
-            return PlanGenerationResultStatus.UNSOLVABLE_INCOMPLETELY
-        else:
-            return PlanGenerationResultStatus.INTERNAL_ERROR
 
     @staticmethod
     def supported_kind() -> 'ProblemKind':
