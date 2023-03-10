@@ -1,12 +1,13 @@
 import pkg_resources
 import sys
 import unified_planning as up
-
-from typing import List, Optional, Union
+import unified_planning.engines.mixins as mixins
+from typing import Iterator, IO, List, Optional, Union
 from unified_planning.model import ProblemKind
 from unified_planning.engines import OptimalityGuarantee
-from unified_planning.engines import PDDLPlanner, Credits
+from unified_planning.engines import PlanGenerationResult
 from unified_planning.engines import PlanGenerationResultStatus as ResultStatus
+from unified_planning.engines import PDDLPlanner, Credits
 
 
 credits = Credits('Fast Downward',
@@ -147,3 +148,92 @@ class FastDownwardOptimalPDDLPlanner(FastDownwardPDDLPlanner):
     @staticmethod
     def satisfies(optimality_guarantee: OptimalityGuarantee) -> bool:
         return True
+
+
+
+class FastDownwardAnytimePDDLPlanner(FastDownwardPDDLPlanner, mixins.AnytimePlannerMixin):
+
+    def __init__(self):
+        super().__init__()
+        self.fd_alias = 'seq-sat-lama-2011'
+
+    @staticmethod
+    def is_oneshot_planner() -> bool:
+        print("Wer fragt?")
+        return False # inherits from OneShotPlannerMixin -> switch off
+
+# TODO the planner should warn the user if `timeout` or
+#        `output_stream` are not `None` and the planner ignores them.
+    def _get_solutions(
+        self,
+        problem: 'up.model.AbstractProblem',
+        timeout: Optional[float] = None,
+        output_stream: Optional[IO[str]] = None,
+    ) -> Iterator['up.engines.results.PlanGenerationResult']:
+        import threading
+        import queue
+
+        q: queue.Queue = queue.Queue()
+
+#        if timeout is not None:
+#            self._options.extend(['-cputime', str(timeout)])
+#        else:
+#            self._options.extend(['-cputime', '1200'])
+#
+        class Writer(up.AnyBaseClass):
+            def __init__(self, os, q, engine):
+                self._os = os
+                self._q = q
+                self._engine = engine
+                self._plan = []
+                self._storing = False
+
+            def write(self, txt: str):
+                if self._os is not None:
+                    self._os.write(txt)
+                for l in txt.splitlines():
+                    if l.endswith('Solution found!'):
+                        self._storing = True
+                    elif self._storing:
+                        if l.endswith('step(s).'):
+                            self._storing = False
+                            plan_str = '\n'.join(self._plan)
+                            plan = self._engine._plan_from_str(
+                                problem, plan_str, self._engine._writer.get_item_named
+                            )
+                            res = PlanGenerationResult(
+                                ResultStatus.INTERMEDIATE,
+                                plan=plan,
+                                engine_name=self._engine.name,
+                            )
+                            self._q.put(res)
+                            self._plan = []
+                        elif not l.startswith('[t='):
+                            self._plan.append("(%s)" % l.split("(")[0].strip())
+
+        def run():
+            writer: IO[str] = Writer(output_stream, q, self)
+            res = self._solve(problem, output_stream=writer)
+            q.put(res)
+
+        try:
+            t = threading.Thread(target=run, daemon=True)
+            t.start()
+            status = ResultStatus.INTERMEDIATE
+            while status == ResultStatus.INTERMEDIATE:
+                res = q.get()
+                status = res.status
+                yield res
+        finally:
+            if self._process is not None:
+                try:
+                    self._process.kill()
+                except OSError:
+                    pass  # This can happen if the process is already terminated
+            t.join()
+
+    @staticmethod
+    def ensures(anytime_guarantee: up.engines.AnytimeGuarantee) -> bool:
+        if anytime_guarantee == up.engines.AnytimeGuarantee.INCREASING_QUALITY:
+            return True
+        return False
