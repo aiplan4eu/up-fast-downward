@@ -22,10 +22,10 @@ credits = Credits('Fast Downward',
 
 class FastDownwardPDDLPlanner(PDDLPlanner):
 
-    def __init__(self):
+    def __init__(self, fast_downward_alias='lama-first', fast_downward_search_config=None):
         super().__init__()
-        self.fd_alias = 'lama-first'
-        self.fd_search_config = None
+        self._fd_alias = fast_downward_alias
+        self._fd_search_config = fast_downward_search_config
         self.guarantee_no_plan_found = ResultStatus.UNSOLVABLE_INCOMPLETELY
         self.guarantee_metrics_task = ResultStatus.SOLVED_SATISFICING
 
@@ -42,13 +42,13 @@ class FastDownwardPDDLPlanner(PDDLPlanner):
         downward = pkg_resources.resource_filename(__name__,
                                                    'downward/fast-downward.py')
         assert sys.executable, "Path to interpreter could not be found"
-        assert not (self.fd_alias and self.fd_search_config)
+        assert not (self._fd_alias and self._fd_search_config)
         cmd = [sys.executable, downward, '--plan-file', plan_filename]
-        if self.fd_alias:
-            cmd += ['--alias', 'lama-first']
+        if self._fd_alias:
+            cmd += ['--alias', self._fd_alias]
         cmd += [domain_filename, problem_filename]
-        if self.fd_search_config:
-            cmd += ['--search'] + self.fd_search_config.split()
+        if self._fd_search_config:
+            cmd += ['--search'] + self._fd_search_config.split()
         return cmd
 
     def _result_status(
@@ -116,9 +116,7 @@ class FastDownwardPDDLPlanner(PDDLPlanner):
 class FastDownwardOptimalPDDLPlanner(FastDownwardPDDLPlanner):
 
     def __init__(self):
-        super().__init__()
-        self.fd_alias = None
-        self.fd_search_config = "astar(lmcut())"
+        super().__init__(fast_downward_alias=None, fast_downward_search_config="astar(lmcut())")
         self.guarantee_no_plan_found = ResultStatus.UNSOLVABLE_PROVEN
         self.guarantee_metrics_task = ResultStatus.SOLVED_OPTIMALLY
 
@@ -152,15 +150,15 @@ class FastDownwardOptimalPDDLPlanner(FastDownwardPDDLPlanner):
 
 
 class FastDownwardAnytimePDDLPlanner(FastDownwardPDDLPlanner, mixins.AnytimePlannerMixin):
-
     def __init__(self):
-        super().__init__()
-        self.fd_alias = 'seq-sat-lama-2011'
+        super().__init__(fast_downward_alias='seq-sat-lama-2011',
+                         fast_downward_search_config=None)
 
     @staticmethod
     def is_oneshot_planner() -> bool:
-        print("Wer fragt?")
         return False # inherits from OneShotPlannerMixin -> switch off
+    # TODO this does not work because it is overriden by the metaclass used by
+    # Engine
 
 # TODO the planner should warn the user if `timeout` or
 #        `output_stream` are not `None` and the planner ignores them.
@@ -180,6 +178,7 @@ class FastDownwardAnytimePDDLPlanner(FastDownwardPDDLPlanner, mixins.AnytimePlan
 #        else:
 #            self._options.extend(['-cputime', '1200'])
 #
+
         class Writer(up.AnyBaseClass):
             def __init__(self, os, q, engine):
                 self._os = os
@@ -187,6 +186,7 @@ class FastDownwardAnytimePDDLPlanner(FastDownwardPDDLPlanner, mixins.AnytimePlan
                 self._engine = engine
                 self._plan = []
                 self._storing = False
+                self._sequential_plan = None
 
             def write(self, txt: str):
                 if self._os is not None:
@@ -207,9 +207,20 @@ class FastDownwardAnytimePDDLPlanner(FastDownwardPDDLPlanner, mixins.AnytimePlan
                                 engine_name=self._engine.name,
                             )
                             self._q.put(res)
+                            self._sequential_plan = plan
                             self._plan = []
                         elif not l.startswith('[t='):
                             self._plan.append("(%s)" % l.split("(")[0].strip())
+                    if l.endswith('Solution found.'):
+                        # search terminated and we read some intermediate
+                        # solution before.
+                        assert self._sequential_plan is not None
+                        res = PlanGenerationResult(
+                            ResultStatus.SOLVED_SATISFICING,
+                            plan=self._sequential_plan,
+                            engine_name=self._engine.name,
+                        )
+                        self._q.put(res)
 
         def run():
             writer: IO[str] = Writer(output_stream, q, self)
