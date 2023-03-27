@@ -2,12 +2,12 @@ import pkg_resources
 import sys
 import unified_planning as up
 import unified_planning.engines.mixins as mixins
-from typing import Iterator, IO, List, Optional, Union
+from typing import Callable, Iterator, IO, List, Optional, Tuple, Union
 from unified_planning.model import ProblemKind
 from unified_planning.engines import OptimalityGuarantee
 from unified_planning.engines import PlanGenerationResult
 from unified_planning.engines import PlanGenerationResultStatus as ResultStatus
-from unified_planning.engines import PDDLPlanner, Credits
+from unified_planning.engines import PDDLPlanner, OperationMode, Credits
 
 
 credits = Credits('Fast Downward',
@@ -20,36 +20,55 @@ credits = Credits('Fast Downward',
 
 
 
-class FastDownwardPDDLPlanner(PDDLPlanner):
+class FastDownwardPDDLPlannerBase(PDDLPlanner):
 
-    def __init__(self, fast_downward_alias='lama-first', fast_downward_search_config=None):
+    def __init__(self, alias=None, search_config=None, anytime_alias=None,
+                 anytime_search_config=None, translate_options=None, 
+                 search_time_limit=None, log_level="info"):
         super().__init__()
-        self._fd_alias = fast_downward_alias
-        self._fd_search_config = fast_downward_search_config
-        self.guarantee_no_plan_found = ResultStatus.UNSOLVABLE_INCOMPLETELY
-        self.guarantee_metrics_task = ResultStatus.SOLVED_SATISFICING
-
-    @property
-    def name(self) -> str:
-        return 'Fast Downward'
-
-    @staticmethod
-    def get_credits(**kwargs) -> Optional['Credits']:
-        return credits
+        self._fd_alias = alias
+        self._fd_search_config = search_config
+        self._fd_anytime_alias = anytime_alias
+        self._fd_anytime_search_config = anytime_search_config
+        self._fd_translate_options = translate_options
+        self._fd_search_time_limit = search_time_limit
+        self._log_level = log_level
+        assert not (self._fd_alias and self._fd_search_config)
+        assert not (self._fd_anytime_alias and self._fd_anytime_search_config)
+        assert not (self._fd_translate_options and 
+            (self._fd_anytime_search_config or self._fd_anytime_search_config))
+        self._guarantee_no_plan_found = ResultStatus.UNSOLVABLE_INCOMPLETELY
+        self._guarantee_metrics_task = ResultStatus.SOLVED_SATISFICING
+        self._mode_running = OperationMode.ONESHOT_PLANNER
+   
 
     def _get_cmd(self, domain_filename: str,
                  problem_filename: str, plan_filename: str) -> List[str]:
         downward = pkg_resources.resource_filename(__name__,
                                                    'downward/fast-downward.py')
         assert sys.executable, "Path to interpreter could not be found"
-        assert not (self._fd_alias and self._fd_search_config)
         cmd = [sys.executable, downward, '--plan-file', plan_filename]
-        if self._fd_alias:
-            cmd += ['--alias', self._fd_alias]
-        cmd += [domain_filename, problem_filename]
-        if self._fd_search_config:
-            cmd += ['--search'] + self._fd_search_config.split()
+        if self._fd_search_time_limit is not None:
+            cmd += ['--search-time-limit', self._fd_search_time_limit]
+        cmd += ['--log-level', self._log_level]
+        if self._mode_running is OperationMode.ONESHOT_PLANNER:
+            if self._fd_alias:
+                cmd += ['--alias', self._fd_alias]
+            cmd += [domain_filename, problem_filename]
+            if self._fd_translate_options:
+                cmd += ['--translate-options'] + self._fd_translate_options
+            if self._fd_search_config:
+                cmd += ['--search-options', '--search'] + self._fd_search_config.split()
+        elif self._mode_running is OperationMode.ANYTIME_PLANNER:
+            if self._fd_anytime_alias:
+                cmd += ['--alias', self._fd_anytime_alias]
+            cmd += [domain_filename, problem_filename]
+            if self._fd_translate_options:
+                cmd += ['--translate-options'] + self._fd_translate_options
+            if self._fd_anytime_search_config:
+                cmd += ['--search-options', '--search'] + self._fd_anytime_search_config.split()
         return cmd
+
 
     def _result_status(
         self,
@@ -62,7 +81,7 @@ class FastDownwardPDDLPlanner(PDDLPlanner):
 
         def solved(metrics):
             if metrics:
-                return self.guarantee_metrics_task
+                return self._guarantee_metrics_task
             else:
                 return ResultStatus.SOLVED_SATISFICING
         
@@ -70,12 +89,12 @@ class FastDownwardPDDLPlanner(PDDLPlanner):
         metrics = problem.quality_metrics
         if retval is None: # legacy support
             if plan is None:
-                return self.guarantee_no_plan_found
+                return self._guarantee_no_plan_found
             else:
                 return solved(metrics)
         if retval in (0, 1, 2, 3):
             if plan is None:
-                return self.guarantee_no_plan_found
+                return self._guarantee_no_plan_found
             else:
                 return solved(metrics)
         if retval in (10, 11):
@@ -85,83 +104,56 @@ class FastDownwardPDDLPlanner(PDDLPlanner):
         else:
             return ResultStatus.INTERNAL_ERROR
 
-    @staticmethod
-    def satisfies(optimality_guarantee: 'OptimalityGuarantee') -> bool:
-        if optimality_guarantee == OptimalityGuarantee.SATISFICING:
-            return True
-        return False
 
-    @staticmethod
-    def supported_kind() -> 'ProblemKind':
-        supported_kind = ProblemKind()
-        supported_kind.set_problem_class('ACTION_BASED')
-        supported_kind.set_typing('FLAT_TYPING')
-        supported_kind.set_typing('HIERARCHICAL_TYPING')
-        supported_kind.set_conditions_kind('NEGATIVE_CONDITIONS')
-        supported_kind.set_conditions_kind('DISJUNCTIVE_CONDITIONS')
-        supported_kind.set_conditions_kind('EXISTENTIAL_CONDITIONS')
-        supported_kind.set_conditions_kind('UNIVERSAL_CONDITIONS')
-        supported_kind.set_conditions_kind('EQUALITY')
-        supported_kind.set_effects_kind('CONDITIONAL_EFFECTS')
-        supported_kind.set_quality_metrics("ACTIONS_COST")
-        supported_kind.set_quality_metrics("PLAN_LENGTH")
-        return supported_kind
+class FastDownwardPDDLPlanner(FastDownwardPDDLPlannerBase, mixins.AnytimePlannerMixin):
 
-    @staticmethod
-    def supports(problem_kind: 'ProblemKind') -> bool:
-        return problem_kind <= FastDownwardPDDLPlanner.supported_kind()
+    def __init__(self, fast_downward_alias=None,
+            fast_downward_search_config=None,
+            fast_downward_anytime_alias=None,
+            fast_downward_anytime_search_config=None,
+            fast_downward_translate_options=None,
+            fast_downward_search_time_limit=None, log_level="info"):
+        if (fast_downward_search_config is None and
+            fast_downward_alias is None):
+            fast_downward_alias = 'lama-first'
+        if (fast_downward_anytime_search_config is None and
+            fast_downward_anytime_alias is None):
+            fast_downward_anytime_alias = 'seq-sat-lama-2011'
+        super().__init__(alias=fast_downward_alias,
+                         search_config=fast_downward_search_config,
+                         anytime_alias=fast_downward_anytime_alias,
+                         anytime_search_config=fast_downward_anytime_search_config,
+                         translate_options=fast_downward_translate_options,
+                         search_time_limit=fast_downward_search_time_limit,
+                         log_level=log_level
+                         )
 
-
-
-class FastDownwardOptimalPDDLPlanner(FastDownwardPDDLPlanner):
-
-    def __init__(self):
-        super().__init__(fast_downward_alias=None, fast_downward_search_config="astar(lmcut())")
-        self.guarantee_no_plan_found = ResultStatus.UNSOLVABLE_PROVEN
-        self.guarantee_metrics_task = ResultStatus.SOLVED_OPTIMALLY
 
     @property
     def name(self) -> str:
-        return 'Fast Downward (with optimality guarantee)'
+        return 'Fast Downward'
 
     @staticmethod
-    def supported_kind() -> 'ProblemKind':
-        supported_kind = ProblemKind()
-        supported_kind.set_problem_class('ACTION_BASED')
-        supported_kind.set_typing('FLAT_TYPING')
-        supported_kind.set_typing('HIERARCHICAL_TYPING')
-        supported_kind.set_conditions_kind('NEGATIVE_CONDITIONS')
-        supported_kind.set_conditions_kind('DISJUNCTIVE_CONDITIONS')
-        supported_kind.set_conditions_kind('EXISTENTIAL_CONDITIONS')
-        supported_kind.set_conditions_kind('UNIVERSAL_CONDITIONS')
-        supported_kind.set_conditions_kind('EQUALITY')
-        supported_kind.set_quality_metrics("ACTIONS_COST")
-        supported_kind.set_quality_metrics("PLAN_LENGTH")
-        return supported_kind
+    def get_credits(**kwargs) -> Optional['Credits']:
+        return credits
 
-    @staticmethod
-    def supports(problem_kind: 'ProblemKind') -> bool:
-        return problem_kind <= FastDownwardOptimalPDDLPlanner.supported_kind()
-
-    @staticmethod
-    def satisfies(optimality_guarantee: OptimalityGuarantee) -> bool:
-        return True
+    def _solve(
+        self,
+        problem: "up.model.AbstractProblem",
+        heuristic: Optional[
+            Callable[["up.model.state.ROState"], Optional[float]]
+        ] = None,
+        timeout: Optional[float] = None,
+        output_stream: Optional[Union[Tuple[IO[str], IO[str]], IO[str]]] = None,
+        anytime=False
+    ):
+        if anytime:
+            self._mode_running = OperationMode.ANYTIME_PLANNER
+        else:
+            self._mode_running = OperationMode.ONESHOT_PLANNER
+        return super()._solve(problem, heuristic, timeout, output_stream)
 
 
-
-class FastDownwardAnytimePDDLPlanner(FastDownwardPDDLPlanner, mixins.AnytimePlannerMixin):
-    def __init__(self):
-        super().__init__(fast_downward_alias='seq-sat-lama-2011',
-                         fast_downward_search_config=None)
-
-    @staticmethod
-    def is_oneshot_planner() -> bool:
-        return False # inherits from OneShotPlannerMixin -> switch off
-    # TODO this does not work because it is overriden by the metaclass used by
-    # Engine
-
-# TODO the planner should warn the user if `timeout` or
-#        `output_stream` are not `None` and the planner ignores them.
     def _get_solutions(
         self,
         problem: 'up.model.AbstractProblem',
@@ -172,12 +164,6 @@ class FastDownwardAnytimePDDLPlanner(FastDownwardPDDLPlanner, mixins.AnytimePlan
         import queue
 
         q: queue.Queue = queue.Queue()
-
-#        if timeout is not None:
-#            self._options.extend(['-cputime', str(timeout)])
-#        else:
-#            self._options.extend(['-cputime', '1200'])
-#
 
         class Writer(up.AnyBaseClass):
             def __init__(self, os, q, engine):
@@ -211,20 +197,19 @@ class FastDownwardAnytimePDDLPlanner(FastDownwardPDDLPlanner, mixins.AnytimePlan
                             self._plan = []
                         elif not l.startswith('[t='):
                             self._plan.append("(%s)" % l.split("(")[0].strip())
-                    if l.endswith('Solution found.'):
-                        # search terminated and we read some intermediate
-                        # solution before.
-                        assert self._sequential_plan is not None
-                        res = PlanGenerationResult(
-                            ResultStatus.SOLVED_SATISFICING,
-                            plan=self._sequential_plan,
-                            engine_name=self._engine.name,
-                        )
-                        self._q.put(res)
+                    if l.startswith('search exit code'):
+                        # search terminated
+                        if self._sequential_plan is not None:
+                            res = PlanGenerationResult(
+                                ResultStatus.SOLVED_SATISFICING,
+                                plan=self._sequential_plan,
+                                engine_name=self._engine.name,
+                            )
+                            self._q.put(res)
 
         def run():
             writer: IO[str] = Writer(output_stream, q, self)
-            res = self._solve(problem, output_stream=writer)
+            res = self._solve(problem, output_stream=writer, anytime=True)
             q.put(res)
 
         try:
@@ -243,8 +228,76 @@ class FastDownwardAnytimePDDLPlanner(FastDownwardPDDLPlanner, mixins.AnytimePlan
                     pass  # This can happen if the process is already terminated
             t.join()
 
+
+    @staticmethod
+    def satisfies(optimality_guarantee: 'OptimalityGuarantee') -> bool:
+        if optimality_guarantee == OptimalityGuarantee.SATISFICING:
+            return True
+        return False
+
+    @staticmethod
+    def supported_kind() -> 'ProblemKind':
+        supported_kind = ProblemKind()
+        supported_kind.set_problem_class('ACTION_BASED')
+        supported_kind.set_typing('FLAT_TYPING')
+        supported_kind.set_typing('HIERARCHICAL_TYPING')
+        supported_kind.set_conditions_kind('NEGATIVE_CONDITIONS')
+        supported_kind.set_conditions_kind('DISJUNCTIVE_CONDITIONS')
+        supported_kind.set_conditions_kind('EXISTENTIAL_CONDITIONS')
+        supported_kind.set_conditions_kind('UNIVERSAL_CONDITIONS')
+        supported_kind.set_conditions_kind('EQUALITY')
+        supported_kind.set_effects_kind('CONDITIONAL_EFFECTS')
+        supported_kind.set_quality_metrics("ACTIONS_COST")
+        supported_kind.set_quality_metrics("PLAN_LENGTH")
+        return supported_kind
+
+    @staticmethod
+    def supports(problem_kind: 'ProblemKind') -> bool:
+        return problem_kind <= FastDownwardPDDLPlanner.supported_kind()
+
     @staticmethod
     def ensures(anytime_guarantee: up.engines.AnytimeGuarantee) -> bool:
         if anytime_guarantee == up.engines.AnytimeGuarantee.INCREASING_QUALITY:
             return True
         return False
+
+
+
+
+class FastDownwardOptimalPDDLPlanner(FastDownwardPDDLPlannerBase):
+
+    def __init__(self, log_level="info"):
+        super().__init__(search_config="astar(lmcut())", log_level=log_level)
+        self._guarantee_no_plan_found = ResultStatus.UNSOLVABLE_PROVEN
+        self._guarantee_metrics_task = ResultStatus.SOLVED_OPTIMALLY
+
+    @property
+    def name(self) -> str:
+        return 'Fast Downward (with optimality guarantee)'
+    
+    @staticmethod
+    def get_credits(**kwargs) -> Optional['Credits']:
+        return credits
+
+    @staticmethod
+    def supported_kind() -> 'ProblemKind':
+        supported_kind = ProblemKind()
+        supported_kind.set_problem_class('ACTION_BASED')
+        supported_kind.set_typing('FLAT_TYPING')
+        supported_kind.set_typing('HIERARCHICAL_TYPING')
+        supported_kind.set_conditions_kind('NEGATIVE_CONDITIONS')
+        supported_kind.set_conditions_kind('DISJUNCTIVE_CONDITIONS')
+        supported_kind.set_conditions_kind('EXISTENTIAL_CONDITIONS')
+        supported_kind.set_conditions_kind('UNIVERSAL_CONDITIONS')
+        supported_kind.set_conditions_kind('EQUALITY')
+        supported_kind.set_quality_metrics("ACTIONS_COST")
+        supported_kind.set_quality_metrics("PLAN_LENGTH")
+        return supported_kind
+
+    @staticmethod
+    def supports(problem_kind: 'ProblemKind') -> bool:
+        return problem_kind <= FastDownwardOptimalPDDLPlanner.supported_kind()
+
+    @staticmethod
+    def satisfies(optimality_guarantee: OptimalityGuarantee) -> bool:
+        return True
