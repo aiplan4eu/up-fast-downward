@@ -319,12 +319,15 @@ class FastDownwardGrounder(Engine, CompilerMixin):
 
         trace_back_map = dict()
 
+        exp_manager = problem.environment.expression_manager
+
         for a in actions:
-            name_and_args = a.name[1:-1].split()
-            schematic_action = problem.action(name_and_args[0])
-            args = [problem.object(o) for o in name_and_args[1:]]
             inst_action = self._transform_action(a, new_problem, writer.get_item_named)
-            trace_back_map[inst_action] = (schematic_action, args)
+            name_and_args = a.name[1:-1].split()
+            schematic_up_action = writer.get_item_named(name_and_args[0])
+            params = (writer.get_item_named(p) for p in name_and_args[1:])
+            up_params = tuple(exp_manager.ObjectExp(p) for p in params)
+            trace_back_map[inst_action] = (schematic_up_action, up_params)
             new_problem.add_action(inst_action)
 
         for g in goals:

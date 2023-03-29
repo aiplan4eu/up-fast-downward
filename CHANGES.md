@@ -10,6 +10,8 @@ UP Fast Downward 0.2.0
   - support setting the log level used by Fast Downward
 - FastDownwardOptimalPDDLPlanner:
   - support setting the log level used by Fast Downward
+- FastDownwardGrounder:
+  - follow changes made in UP 
 - credits: mention people behind the heuristics we use in the default
   configurations
 - common base class for satisficing and optimal solver engines
