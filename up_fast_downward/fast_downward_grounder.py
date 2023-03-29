@@ -235,18 +235,19 @@ class FastDownwardGrounder(Engine, CompilerMixin):
             return fnode
 
     def _transform_action(
-        self, fd_action, problem: "up.model.AbstractProblem",
-        get_item_named: Callable[
-            [str],
-            Union[
-                "up.model.Type",
-                "up.model.Action",
-                "up.model.Fluent",
-                "up.model.Object",
-                "up.model.Parameter",
-                "up.model.Variable",
-                ],
-            ]
+            self, fd_action: "translate.pddl.Action",
+            problem: "up.model.AbstractProblem",
+            get_item_named: Callable[
+                [str],
+                Union[
+                    "up.model.Type",
+                    "up.model.Action",
+                    "up.model.Fluent",
+                    "up.model.Object",
+                    "up.model.Parameter",
+                    "up.model.Variable",
+                    ],
+                ]
     ) -> InstantaneousAction:
         def fnode(fact):
             return self._get_fnode(fact, problem, get_item_named)
