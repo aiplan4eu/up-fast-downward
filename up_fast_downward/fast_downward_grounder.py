@@ -19,14 +19,15 @@ from unified_planning.exceptions import UPUnsupportedProblemTypeError
 
 
 credits = Credits(
-          'Fast Downward',
-          'Uni Basel team and contributors '
-          '(cf. https://github.com/aibasel/downward/blob/main/README.md)',
-          'gabriele.roeger@unibas.ch',
-          'https://www.fast-downward.org',
-          'GPLv3',
-          'Fast Downward is a domain-independent classical planning system.',
-          'Fast Downward is a domain-independent classical planning system.')
+    "Fast Downward",
+    "Uni Basel team and contributors "
+    "(cf. https://github.com/aibasel/downward/blob/main/README.md)",
+    "gabriele.roeger@unibas.ch (for UP integration)",
+    "https://www.fast-downward.org",
+    "GPLv3",
+    "Fast Downward is a domain-independent classical planning system.",
+    "Fast Downward is a domain-independent classical planning system.",
+)
 
 axioms_msg = """ Grounding this problem introduces axioms.
 
@@ -42,10 +43,10 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
 
     @property
     def name(self) -> str:
-        return 'Fast Downward Reachability Grounder'
+        return "Fast Downward Reachability Grounder"
 
     @staticmethod
-    def get_credits(**kwargs) -> Optional['Credits']:
+    def get_credits(**kwargs) -> Optional["Credits"]:
         return credits
 
     @staticmethod
@@ -74,14 +75,12 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
 
     @staticmethod
     def resulting_problem_kind(
-        problem_kind: ProblemKind,
-        compilation_kind: Optional[CompilationKind] = None
+        problem_kind: ProblemKind, compilation_kind: Optional[CompilationKind] = None
     ) -> ProblemKind:
         return ProblemKind(problem_kind.features)
 
     def _compile(
-        self, problem: "up.model.AbstractProblem",
-        compilation_kind: "CompilationKind"
+        self, problem: "up.model.AbstractProblem", compilation_kind: "CompilationKind"
     ) -> CompilerResult:
         """
         Takes an instance of a :class:`~up.model.Problem` and the `GROUNDING`
@@ -100,8 +99,9 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         pddl_domain = writer.get_domain().split("\n")
 
         orig_path = list(sys.path)
-        path = os.path.join(os.path.dirname(__file__),
-                            "downward/builds/release/bin/translate")
+        path = os.path.join(
+            os.path.dirname(__file__), "downward/builds/release/bin/translate"
+        )
         sys.path.insert(1, path)
         import pddl_parser as fast_downward_pddl_parser
         import normalize as fast_downward_normalize
@@ -123,13 +123,15 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
             if isinstance(atom.predicate, pddl.Action):
                 action = atom.predicate
                 schematic_up_action = writer.get_item_named(action.name)
-                params = (writer.get_item_named(p)
-                          for p in atom.args[:len(action.parameters)])
+                params = (
+                    writer.get_item_named(p)
+                    for p in atom.args[: len(action.parameters)]
+                )
                 up_params = tuple(exp_manager.ObjectExp(p) for p in params)
                 grounding_action_map[schematic_up_action].append(up_params)
         sys.path = orig_path
 
-        grounder_helper = GrounderHelper(problem,  grounding_action_map)
+        grounder_helper = GrounderHelper(problem, grounding_action_map)
         trace_back_map: Dict[Action, Tuple[Action, List[FNode]]] = {}
 
         new_problem = problem.clone()
@@ -161,10 +163,10 @@ class FastDownwardGrounder(Engine, CompilerMixin):
 
     @property
     def name(self) -> str:
-        return 'Fast Downward Grounder'
+        return "Fast Downward Grounder"
 
     @staticmethod
-    def get_credits(**kwargs) -> Optional['Credits']:
+    def get_credits(**kwargs) -> Optional["Credits"]:
         return credits
 
     @staticmethod
@@ -205,25 +207,27 @@ class FastDownwardGrounder(Engine, CompilerMixin):
 
     @staticmethod
     def resulting_problem_kind(
-        problem_kind: ProblemKind,
-        compilation_kind: Optional[CompilationKind] = None
+        problem_kind: ProblemKind, compilation_kind: Optional[CompilationKind] = None
     ) -> ProblemKind:
         orig_features = problem_kind.features
         features = set.difference(orig_features, {"DISJUNCTIVE_CONDITIONS"})
         return ProblemKind(features)
 
     def _get_fnode(
-        self, fact, problem: "up.model.AbstractProblem",
+        self,
+        fact,
+        problem: "up.model.AbstractProblem",
         get_item_named: Callable[
-         [str],
-         Union[
-             "up.model.Type",
-             "up.model.Action",
-             "up.model.Fluent",
-             "up.model.Object",
-             "up.model.Parameter",
-             "up.model.Variable",
-         ]]
+            [str],
+            Union[
+                "up.model.Type",
+                "up.model.Action",
+                "up.model.Fluent",
+                "up.model.Object",
+                "up.model.Parameter",
+                "up.model.Variable",
+            ],
+        ],
     ) -> FNode:
         exp_manager = problem.environment.expression_manager
         fluent = get_item_named(fact.predicate)
@@ -235,7 +239,9 @@ class FastDownwardGrounder(Engine, CompilerMixin):
             return fnode
 
     def _transform_action(
-        self, fd_action, problem: "up.model.AbstractProblem",
+        self,
+        fd_action: "translate.pddl.Action",
+        problem: "up.model.AbstractProblem",
         get_item_named: Callable[
             [str],
             Union[
@@ -245,8 +251,8 @@ class FastDownwardGrounder(Engine, CompilerMixin):
                 "up.model.Object",
                 "up.model.Parameter",
                 "up.model.Variable",
-                ],
-            ]
+            ],
+        ],
     ) -> InstantaneousAction:
         def fnode(fact):
             return self._get_fnode(fact, problem, get_item_named)
@@ -267,8 +273,7 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         return action
 
     def _compile(
-        self, problem: "up.model.AbstractProblem",
-        compilation_kind: "CompilationKind"
+        self, problem: "up.model.AbstractProblem", compilation_kind: "CompilationKind"
     ) -> CompilerResult:
         """
         Takes an instance of a :class:`~up.model.Problem` and the `GROUNDING`
@@ -287,8 +292,9 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         pddl_domain = writer.get_domain().split("\n")
 
         orig_path = list(sys.path)
-        path = os.path.join(os.path.dirname(__file__),
-                            "downward/builds/release/bin/translate")
+        path = os.path.join(
+            os.path.dirname(__file__), "downward/builds/release/bin/translate"
+        )
         sys.path.insert(1, path)
         import pddl_parser as fast_downward_pddl_parser
         import instantiate as fd_instantiate
@@ -313,13 +319,15 @@ class FastDownwardGrounder(Engine, CompilerMixin):
 
         trace_back_map = dict()
 
+        exp_manager = problem.environment.expression_manager
+
         for a in actions:
+            inst_action = self._transform_action(a, new_problem, writer.get_item_named)
             name_and_args = a.name[1:-1].split()
-            schematic_action = problem.action(name_and_args[0])
-            args = [problem.object(o) for o in name_and_args[1:]]
-            inst_action = self._transform_action(a, new_problem,
-                                                 writer.get_item_named)
-            trace_back_map[inst_action] = (schematic_action, args)
+            schematic_up_action = writer.get_item_named(name_and_args[0])
+            params = (writer.get_item_named(p) for p in name_and_args[1:])
+            up_params = tuple(exp_manager.ObjectExp(p) for p in params)
+            trace_back_map[inst_action] = (schematic_up_action, up_params)
             new_problem.add_action(inst_action)
 
         for g in goals:
