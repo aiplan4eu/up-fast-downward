@@ -7,32 +7,31 @@ from unified_planning.model import ProblemKind
 from unified_planning.engines import OptimalityGuarantee
 from unified_planning.engines import PlanGenerationResultStatus as ResultStatus
 from unified_planning.engines import PDDLPlanner, OperationMode, Credits
-from unified_planning.engines.results import (
-    LogLevel,
-    LogMessage,
-    PlanGenerationResult
+from unified_planning.engines.results import LogLevel, LogMessage, PlanGenerationResult
+
+
+credits = Credits(
+    "Fast Downward",
+    "Uni Basel team and contributors (cf. https://github.com/aibasel/downward/blob/main/README.md)",
+    "gabriele.roeger@unibas.ch",
+    "https://www.fast-downward.org",
+    "GPLv3",
+    "Fast Downward is a domain-independent classical planning system.",
+    "Fast Downward is a domain-independent classical planning system.",
 )
 
 
-credits = Credits('Fast Downward',
-                  'Uni Basel team and contributors (cf. https://github.com/aibasel/downward/blob/main/README.md)',
-                  'gabriele.roeger@unibas.ch',
-                  'https://www.fast-downward.org',
-                  'GPLv3',
-                  'Fast Downward is a domain-independent classical planning system.',
-                  'Fast Downward is a domain-independent classical planning system.')
-
-
-
 class FastDownwardPDDLPlannerBase(PDDLPlanner):
-
-    def __init__(self, fast_downward_alias: Optional[str]=None,
-                 fast_downward_search_config: Optional[str]=None,
-                 fast_downward_anytime_alias: Optional[str]=None,
-                 fast_downward_anytime_search_config: Optional[str]=None,
-                 fast_downward_translate_options: Optional[List[str]]=None,
-                 fast_downward_search_time_limit: Optional[str]=None,
-                 log_level: str="info"):
+    def __init__(
+        self,
+        fast_downward_alias: Optional[str] = None,
+        fast_downward_search_config: Optional[str] = None,
+        fast_downward_anytime_alias: Optional[str] = None,
+        fast_downward_anytime_search_config: Optional[str] = None,
+        fast_downward_translate_options: Optional[List[str]] = None,
+        fast_downward_search_time_limit: Optional[str] = None,
+        log_level: str = "info",
+    ):
         super().__init__()
         self._fd_alias = fast_downward_alias
         self._fd_search_config = fast_downward_search_config
@@ -43,58 +42,62 @@ class FastDownwardPDDLPlannerBase(PDDLPlanner):
         self._log_level = log_level
         assert not (self._fd_alias and self._fd_search_config)
         assert not (self._fd_anytime_alias and self._fd_anytime_search_config)
-        assert not (self._fd_translate_options and 
-            (self._fd_anytime_search_config or self._fd_anytime_search_config))
+        assert not (
+            self._fd_translate_options
+            and (self._fd_anytime_search_config or self._fd_anytime_search_config)
+        )
         self._guarantee_no_plan_found = ResultStatus.UNSOLVABLE_INCOMPLETELY
         self._guarantee_metrics_task = ResultStatus.SOLVED_SATISFICING
         self._mode_running = OperationMode.ONESHOT_PLANNER
-   
 
-    def _get_cmd(self, domain_filename: str,
-                 problem_filename: str, plan_filename: str) -> List[str]:
-        downward = pkg_resources.resource_filename(__name__,
-                                                   'downward/fast-downward.py')
+    def _get_cmd(
+        self, domain_filename: str, problem_filename: str, plan_filename: str
+    ) -> List[str]:
+        downward = pkg_resources.resource_filename(
+            __name__, "downward/fast-downward.py"
+        )
         assert sys.executable, "Path to interpreter could not be found"
-        cmd = [sys.executable, downward, '--plan-file', plan_filename]
+        cmd = [sys.executable, downward, "--plan-file", plan_filename]
         if self._fd_search_time_limit is not None:
-            cmd += ['--search-time-limit', self._fd_search_time_limit]
-        cmd += ['--log-level', self._log_level]
+            cmd += ["--search-time-limit", self._fd_search_time_limit]
+        cmd += ["--log-level", self._log_level]
         if self._mode_running is OperationMode.ONESHOT_PLANNER:
             if self._fd_alias:
-                cmd += ['--alias', self._fd_alias]
+                cmd += ["--alias", self._fd_alias]
             cmd += [domain_filename, problem_filename]
             if self._fd_translate_options:
-                cmd += ['--translate-options'] + self._fd_translate_options
+                cmd += ["--translate-options"] + self._fd_translate_options
             if self._fd_search_config:
-                cmd += ['--search-options', '--search'] + self._fd_search_config.split()
+                cmd += ["--search-options", "--search"] + self._fd_search_config.split()
         elif self._mode_running is OperationMode.ANYTIME_PLANNER:
             if self._fd_anytime_alias:
-                cmd += ['--alias', self._fd_anytime_alias]
+                cmd += ["--alias", self._fd_anytime_alias]
             cmd += [domain_filename, problem_filename]
             if self._fd_translate_options:
-                cmd += ['--translate-options'] + self._fd_translate_options
+                cmd += ["--translate-options"] + self._fd_translate_options
             if self._fd_anytime_search_config:
-                cmd += ['--search-options', '--search'] + self._fd_anytime_search_config.split()
+                cmd += [
+                    "--search-options",
+                    "--search",
+                ] + self._fd_anytime_search_config.split()
         return cmd
-
 
     def _result_status(
         self,
         problem: "up.model.Problem",
         plan: Optional["up.plans.Plan"],
-        retval: int=None, # Default value for legacy support
-        log_messages: Optional[List[LogMessage]]=None
-        ) -> "up.engines.results.PlanGenerationResultStatus":
-
+        retval: int = None,  # Default value for legacy support
+        log_messages: Optional[List[LogMessage]] = None,
+    ) -> "up.engines.results.PlanGenerationResultStatus":
         def solved(metrics):
             if metrics:
                 return self._guarantee_metrics_task
             else:
                 return ResultStatus.SOLVED_SATISFICING
-        
+
         # https://www.fast-downward.org/ExitCodes
         metrics = problem.quality_metrics
-        if retval is None: # legacy support
+        if retval is None:  # legacy support
             if plan is None:
                 return self._guarantee_no_plan_found
             else:
@@ -113,36 +116,39 @@ class FastDownwardPDDLPlannerBase(PDDLPlanner):
 
 
 class FastDownwardPDDLPlanner(FastDownwardPDDLPlannerBase, mixins.AnytimePlannerMixin):
-
-    def __init__(self, fast_downward_alias: Optional[str]=None,
-            fast_downward_search_config: Optional[str]=None,
-            fast_downward_anytime_alias: Optional[str]=None,
-            fast_downward_anytime_search_config: Optional[str]=None,
-            fast_downward_translate_options: Optional[List[str]]=None,
-            fast_downward_search_time_limit: Optional[str]=None,
-            log_level: str="info"):
-        if (fast_downward_search_config is None and
-            fast_downward_alias is None):
-            fast_downward_alias = 'lama-first'
-        if (fast_downward_anytime_search_config is None and
-            fast_downward_anytime_alias is None):
-            fast_downward_anytime_alias = 'seq-sat-lama-2011'
-        super().__init__(fast_downward_alias=fast_downward_alias,
-                         fast_downward_search_config=fast_downward_search_config,
-                         fast_downward_anytime_alias=fast_downward_anytime_alias,
-                         fast_downward_anytime_search_config=fast_downward_anytime_search_config,
-                         fast_downward_translate_options=fast_downward_translate_options,
-                         fast_downward_search_time_limit=fast_downward_search_time_limit,
-                         log_level=log_level
-                         ) # TODO use kwargs?
-
+    def __init__(
+        self,
+        fast_downward_alias: Optional[str] = None,
+        fast_downward_search_config: Optional[str] = None,
+        fast_downward_anytime_alias: Optional[str] = None,
+        fast_downward_anytime_search_config: Optional[str] = None,
+        fast_downward_translate_options: Optional[List[str]] = None,
+        fast_downward_search_time_limit: Optional[str] = None,
+        log_level: str = "info",
+    ):
+        if fast_downward_search_config is None and fast_downward_alias is None:
+            fast_downward_alias = "lama-first"
+        if (
+            fast_downward_anytime_search_config is None
+            and fast_downward_anytime_alias is None
+        ):
+            fast_downward_anytime_alias = "seq-sat-lama-2011"
+        super().__init__(
+            fast_downward_alias=fast_downward_alias,
+            fast_downward_search_config=fast_downward_search_config,
+            fast_downward_anytime_alias=fast_downward_anytime_alias,
+            fast_downward_anytime_search_config=fast_downward_anytime_search_config,
+            fast_downward_translate_options=fast_downward_translate_options,
+            fast_downward_search_time_limit=fast_downward_search_time_limit,
+            log_level=log_level,
+        )  # TODO use kwargs?
 
     @property
     def name(self) -> str:
-        return 'Fast Downward'
+        return "Fast Downward"
 
     @staticmethod
-    def get_credits(**kwargs) -> Optional['Credits']:
+    def get_credits(**kwargs) -> Optional["Credits"]:
         return credits
 
     def _solve(
@@ -150,10 +156,10 @@ class FastDownwardPDDLPlanner(FastDownwardPDDLPlannerBase, mixins.AnytimePlanner
         problem: "up.model.AbstractProblem",
         heuristic: Optional[
             Callable[["up.model.state.ROState"], Optional[float]]
-        ]=None,
-        timeout: Optional[float]=None,
-        output_stream: Optional[Union[Tuple[IO[str], IO[str]], IO[str]]]=None,
-        anytime: bool=False
+        ] = None,
+        timeout: Optional[float] = None,
+        output_stream: Optional[Union[Tuple[IO[str], IO[str]], IO[str]]] = None,
+        anytime: bool = False,
     ):
         if anytime:
             self._mode_running = OperationMode.ANYTIME_PLANNER
@@ -161,13 +167,12 @@ class FastDownwardPDDLPlanner(FastDownwardPDDLPlannerBase, mixins.AnytimePlanner
             self._mode_running = OperationMode.ONESHOT_PLANNER
         return super()._solve(problem, heuristic, timeout, output_stream)
 
-
     def _get_solutions(
         self,
-        problem: 'up.model.AbstractProblem',
-        timeout: Optional[float]=None,
-        output_stream: Optional[IO[str]]=None,
-    ) -> Iterator['up.engines.results.PlanGenerationResult']:
+        problem: "up.model.AbstractProblem",
+        timeout: Optional[float] = None,
+        output_stream: Optional[IO[str]] = None,
+    ) -> Iterator["up.engines.results.PlanGenerationResult"]:
         import threading
         import queue
 
@@ -186,12 +191,12 @@ class FastDownwardPDDLPlanner(FastDownwardPDDLPlannerBase, mixins.AnytimePlanner
                 if self._os is not None:
                     self._os.write(txt)
                 for l in txt.splitlines():
-                    if l.endswith('Solution found!'):
+                    if l.endswith("Solution found!"):
                         self._storing = True
                     elif self._storing:
-                        if l.endswith('step(s).'):
+                        if l.endswith("step(s)."):
                             self._storing = False
-                            plan_str = '\n'.join(self._plan)
+                            plan_str = "\n".join(self._plan)
                             plan = self._engine._plan_from_str(
                                 problem, plan_str, self._engine._writer.get_item_named
                             )
@@ -203,9 +208,9 @@ class FastDownwardPDDLPlanner(FastDownwardPDDLPlannerBase, mixins.AnytimePlanner
                             self._q.put(res)
                             self._sequential_plan = plan
                             self._plan = []
-                        elif not l.startswith('[t='):
+                        elif not l.startswith("[t="):
                             self._plan.append("(%s)" % l.split("(")[0].strip())
-                    if l.startswith('search exit code'):
+                    if l.startswith("search exit code"):
                         # search terminated
                         if self._sequential_plan is not None:
                             res = PlanGenerationResult(
@@ -236,31 +241,30 @@ class FastDownwardPDDLPlanner(FastDownwardPDDLPlannerBase, mixins.AnytimePlanner
                     pass  # This can happen if the process is already terminated
             t.join()
 
-
     @staticmethod
-    def satisfies(optimality_guarantee: 'OptimalityGuarantee') -> bool:
+    def satisfies(optimality_guarantee: "OptimalityGuarantee") -> bool:
         if optimality_guarantee == OptimalityGuarantee.SATISFICING:
             return True
         return False
 
     @staticmethod
-    def supported_kind() -> 'ProblemKind':
+    def supported_kind() -> "ProblemKind":
         supported_kind = ProblemKind()
-        supported_kind.set_problem_class('ACTION_BASED')
-        supported_kind.set_typing('FLAT_TYPING')
-        supported_kind.set_typing('HIERARCHICAL_TYPING')
-        supported_kind.set_conditions_kind('NEGATIVE_CONDITIONS')
-        supported_kind.set_conditions_kind('DISJUNCTIVE_CONDITIONS')
-        supported_kind.set_conditions_kind('EXISTENTIAL_CONDITIONS')
-        supported_kind.set_conditions_kind('UNIVERSAL_CONDITIONS')
-        supported_kind.set_conditions_kind('EQUALITY')
-        supported_kind.set_effects_kind('CONDITIONAL_EFFECTS')
+        supported_kind.set_problem_class("ACTION_BASED")
+        supported_kind.set_typing("FLAT_TYPING")
+        supported_kind.set_typing("HIERARCHICAL_TYPING")
+        supported_kind.set_conditions_kind("NEGATIVE_CONDITIONS")
+        supported_kind.set_conditions_kind("DISJUNCTIVE_CONDITIONS")
+        supported_kind.set_conditions_kind("EXISTENTIAL_CONDITIONS")
+        supported_kind.set_conditions_kind("UNIVERSAL_CONDITIONS")
+        supported_kind.set_conditions_kind("EQUALITY")
+        supported_kind.set_effects_kind("CONDITIONAL_EFFECTS")
         supported_kind.set_quality_metrics("ACTIONS_COST")
         supported_kind.set_quality_metrics("PLAN_LENGTH")
         return supported_kind
 
     @staticmethod
-    def supports(problem_kind: 'ProblemKind') -> bool:
+    def supports(problem_kind: "ProblemKind") -> bool:
         return problem_kind <= FastDownwardPDDLPlanner.supported_kind()
 
     @staticmethod
@@ -270,40 +274,39 @@ class FastDownwardPDDLPlanner(FastDownwardPDDLPlannerBase, mixins.AnytimePlanner
         return False
 
 
-
-
 class FastDownwardOptimalPDDLPlanner(FastDownwardPDDLPlannerBase):
-
-    def __init__(self, log_level: str="info"):
-        super().__init__(fast_downward_search_config="astar(lmcut())", log_level=log_level)
+    def __init__(self, log_level: str = "info"):
+        super().__init__(
+            fast_downward_search_config="astar(lmcut())", log_level=log_level
+        )
         self._guarantee_no_plan_found = ResultStatus.UNSOLVABLE_PROVEN
         self._guarantee_metrics_task = ResultStatus.SOLVED_OPTIMALLY
 
     @property
     def name(self) -> str:
-        return 'Fast Downward (with optimality guarantee)'
-    
+        return "Fast Downward (with optimality guarantee)"
+
     @staticmethod
-    def get_credits(**kwargs) -> Optional['Credits']:
+    def get_credits(**kwargs) -> Optional["Credits"]:
         return credits
 
     @staticmethod
-    def supported_kind() -> 'ProblemKind':
+    def supported_kind() -> "ProblemKind":
         supported_kind = ProblemKind()
-        supported_kind.set_problem_class('ACTION_BASED')
-        supported_kind.set_typing('FLAT_TYPING')
-        supported_kind.set_typing('HIERARCHICAL_TYPING')
-        supported_kind.set_conditions_kind('NEGATIVE_CONDITIONS')
-        supported_kind.set_conditions_kind('DISJUNCTIVE_CONDITIONS')
-        supported_kind.set_conditions_kind('EXISTENTIAL_CONDITIONS')
-        supported_kind.set_conditions_kind('UNIVERSAL_CONDITIONS')
-        supported_kind.set_conditions_kind('EQUALITY')
+        supported_kind.set_problem_class("ACTION_BASED")
+        supported_kind.set_typing("FLAT_TYPING")
+        supported_kind.set_typing("HIERARCHICAL_TYPING")
+        supported_kind.set_conditions_kind("NEGATIVE_CONDITIONS")
+        supported_kind.set_conditions_kind("DISJUNCTIVE_CONDITIONS")
+        supported_kind.set_conditions_kind("EXISTENTIAL_CONDITIONS")
+        supported_kind.set_conditions_kind("UNIVERSAL_CONDITIONS")
+        supported_kind.set_conditions_kind("EQUALITY")
         supported_kind.set_quality_metrics("ACTIONS_COST")
         supported_kind.set_quality_metrics("PLAN_LENGTH")
         return supported_kind
 
     @staticmethod
-    def supports(problem_kind: 'ProblemKind') -> bool:
+    def supports(problem_kind: "ProblemKind") -> bool:
         return problem_kind <= FastDownwardOptimalPDDLPlanner.supported_kind()
 
     @staticmethod
