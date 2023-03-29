@@ -1,4 +1,5 @@
 # Release notes
+
 UP Fast Downward 0.2.0
 - FastDownwardPDDLPlanner:
   - support anytime operation mode
@@ -16,6 +17,10 @@ UP Fast Downward 0.2.0
   configurations
 - common base class for satisficing and optimal solver engines
 - code quality improvements: typing information and style fixes
+
+UP Fast Downward 0.1.2
+- follow change in up:
+  rename problem.env into problem.environment
 
 UP Fast Downward 0.1.1
 - fix broken setup.py
