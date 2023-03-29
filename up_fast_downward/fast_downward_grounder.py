@@ -257,7 +257,6 @@ class FastDownwardGrounder(Engine, CompilerMixin):
     ) -> InstantaneousAction:
         def fnode(fact):
             return self._get_fnode(fact, problem, get_item_named)
-
         exp_manager = problem.environment.expression_manager
 
         name_and_args = fd_action.name[1:-1].split()
