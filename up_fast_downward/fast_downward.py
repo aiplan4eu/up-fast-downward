@@ -9,16 +9,17 @@ from unified_planning.engines import PlanGenerationResultStatus as ResultStatus
 from unified_planning.engines import PDDLPlanner, OperationMode, Credits
 from unified_planning.engines.results import LogLevel, LogMessage, PlanGenerationResult
 
+# TODO adapt default configurations?
 
-credits = Credits(
-    "Fast Downward",
-    "Uni Basel team and contributors (cf. https://github.com/aibasel/downward/blob/main/README.md)",
-    "gabriele.roeger@unibas.ch",
-    "https://www.fast-downward.org",
-    "GPLv3",
-    "Fast Downward is a domain-independent classical planning system.",
-    "Fast Downward is a domain-independent classical planning system.",
-)
+credits = {
+    "name": "Fast Downward",
+    "author": "Uni Basel team and contributors (cf. https://github.com/aibasel/downward/blob/main/README.md)",
+    "contact": "gabriele.roeger@unibas.ch (for UP integration)",
+    "website": "https://www.fast-downward.org",
+    "license": "GPLv3",
+    "short_description": "Fast Downward is a domain-independent classical planning system.",
+    "long_description": "Fast Downward is a domain-independent classical planning system.",
+}
 
 
 class FastDownwardPDDLPlannerBase(PDDLPlanner):
@@ -141,7 +142,7 @@ class FastDownwardPDDLPlanner(FastDownwardPDDLPlannerBase, mixins.AnytimePlanner
             fast_downward_translate_options=fast_downward_translate_options,
             fast_downward_search_time_limit=fast_downward_search_time_limit,
             log_level=log_level,
-        )  # TODO use kwargs?
+        )
 
     @property
     def name(self) -> str:
@@ -149,7 +150,14 @@ class FastDownwardPDDLPlanner(FastDownwardPDDLPlannerBase, mixins.AnytimePlanner
 
     @staticmethod
     def get_credits(**kwargs) -> Optional["Credits"]:
-        return credits
+        c = Credits(**credits)
+        details = [
+            c.long_description,
+            "The default configuration uses the FF heuristic by Jörg Hoffmann and",
+            "the landmark heuristic by Silvia Richter and Matthias Westphal.",
+        ]
+        c.long_description = " ".join(details)
+        return c
 
     def _solve(
         self,
@@ -288,7 +296,14 @@ class FastDownwardOptimalPDDLPlanner(FastDownwardPDDLPlannerBase):
 
     @staticmethod
     def get_credits(**kwargs) -> Optional["Credits"]:
-        return credits
+        c = Credits(**credits)
+        details = [
+            c.long_description,
+            "The optimal engine uses the LM-Cut heuristic by",
+            "Malte Helmert and Carmel Domshlak.",
+        ]
+        c.long_description = " ".join(details)
+        return c
 
     @staticmethod
     def supported_kind() -> "ProblemKind":
