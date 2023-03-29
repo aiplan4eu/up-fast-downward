@@ -15,8 +15,10 @@ UP Fast Downward 0.2.0
   - follow changes made in UP 
 - credits: mention people behind the heuristics we use in the default
   configurations
+- use latest Fast Downward version
 - common base class for satisficing and optimal solver engines
 - code quality improvements: typing information and style fixes
+- added jupyter notebook with examples
 
 UP Fast Downward 0.1.2
 - follow change in up:
