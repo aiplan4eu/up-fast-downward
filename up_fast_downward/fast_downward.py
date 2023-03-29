@@ -9,7 +9,6 @@ from unified_planning.engines import PlanGenerationResultStatus as ResultStatus
 from unified_planning.engines import PDDLPlanner, OperationMode, Credits
 from unified_planning.engines.results import LogLevel, LogMessage, PlanGenerationResult
 
-# TODO adapt default configurations?
 
 credits = {
     "name": "Fast Downward",
@@ -43,10 +42,6 @@ class FastDownwardPDDLPlannerBase(PDDLPlanner):
         self._log_level = log_level
         assert not (self._fd_alias and self._fd_search_config)
         assert not (self._fd_anytime_alias and self._fd_anytime_search_config)
-        assert not (
-            self._fd_translate_options
-            and (self._fd_anytime_search_config or self._fd_anytime_search_config)
-        )
         self._guarantee_no_plan_found = ResultStatus.UNSOLVABLE_INCOMPLETELY
         self._guarantee_metrics_task = ResultStatus.SOLVED_SATISFICING
         self._mode_running = OperationMode.ONESHOT_PLANNER
