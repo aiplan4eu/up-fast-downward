@@ -23,7 +23,6 @@ credits = Credits(
     "Uni Basel team and contributors "
     "(cf. https://github.com/aibasel/downward/blob/main/README.md)",
     "gabriele.roeger@unibas.ch (for UP integration)",
-    "gabriele.roeger@unibas.ch",
     "https://www.fast-downward.org",
     "GPLv3",
     "Fast Downward is a domain-independent classical planning system.",
