@@ -3,14 +3,14 @@ import os.path
 import sys
 import unified_planning as up
 from functools import partial
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, cast
 
 from typing import Callable, Optional, Union
-from unified_planning.model import Action, FNode, Problem, ProblemKind
+from unified_planning.model import Action, FNode, Problem, ProblemKind, MinimizeActionCosts, Expression
 from unified_planning.model.action import InstantaneousAction
 from unified_planning.engines.compilers.utils import lift_action_instance
-from unified_planning.engines.compilers.grounder import GrounderHelper
-from unified_planning.engines.engine import Engine
+from unified_planning.engines.compilers.grounder import Grounder
+from unified_planning.engines.engine import Engine, Simplifier
 from unified_planning.engines import Credits
 from unified_planning.engines.mixins.compiler import CompilationKind
 from unified_planning.engines.mixins.compiler import CompilerMixin
@@ -62,6 +62,7 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         supported_kind.set_effects_kind("STATIC_FLUENTS_IN_BOOLEAN_ASSIGNMENTS")
         supported_kind.set_effects_kind("FLUENTS_IN_BOOLEAN_ASSIGNMENTS")
         supported_kind.set_quality_metrics("ACTIONS_COST")
+        supported_kind.set_actions_cost_kind("STATIC_FLUENTS_IN_ACTIONS_COST")
         supported_kind.set_quality_metrics("PLAN_LENGTH")
         supported_kind.set_conditions_kind("UNIVERSAL_CONDITIONS")
         supported_kind.set_conditions_kind("EXISTENTIAL_CONDITIONS")
@@ -133,25 +134,13 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
                 grounding_action_map[schematic_up_action].append(up_params)
         sys.path = orig_path
 
-        grounder_helper = GrounderHelper(problem, grounding_action_map)
-        trace_back_map: Dict[Action, Tuple[Action, List[FNode]]] = {}
-
-        new_problem = problem.clone()
+        up_grounder = Grounder(grounding_actions_map=grounding_action_map)
+        up_res = up_grounder.compile(problem, compilation_kind)
+        new_problem = up_res.problem
         new_problem.name = f"{self.name}_{problem.name}"
-        new_problem.clear_actions()
-        for (
-            old_action,
-            parameters,
-            new_action,
-        ) in grounder_helper.get_grounded_actions():
-            if new_action is not None:
-                new_problem.add_action(new_action)
-                trace_back_map[new_action] = (old_action, list(parameters))
 
         return CompilerResult(
-            new_problem,
-            partial(lift_action_instance, map=trace_back_map),
-            self.name,
+            new_problem, up_res.map_back_action_instance, self.name
         )
 
     def destroy(self):
@@ -184,6 +173,7 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         supported_kind.set_effects_kind("STATIC_FLUENTS_IN_BOOLEAN_ASSIGNMENTS")
         supported_kind.set_effects_kind("FLUENTS_IN_BOOLEAN_ASSIGNMENTS")
         supported_kind.set_quality_metrics("ACTIONS_COST")
+        supported_kind.set_actions_cost_kind("STATIC_FLUENTS_IN_ACTIONS_COST")
         supported_kind.set_quality_metrics("PLAN_LENGTH")
 
         # We don't support allquantified conditions because they can lead
@@ -338,6 +328,27 @@ class FastDownwardGrounder(Engine, CompilerMixin):
             fnode = self._get_fnode(g, new_problem, writer.get_item_named)
             new_problem.add_goal(fnode)
         sys.path = orig_path
+
+        new_problem.clear_quality_metrics()
+        for qm in problem.quality_metrics:
+            if isinstance(qm, MinimizeActionCosts):
+                simplifier = Simplifier(new_problem)
+                new_costs: Dict[Action, Optional[FNode]] = {}
+                for new_action, (old_action, params) in trace_back_map.items():
+                    subs = cast(
+                        Dict[Expression, Expression],
+                        dict(zip(old_action.parameters, params)),
+                    )
+                    old_cost = qm.get_action_cost(old_action)
+                    if old_cost is None:
+                        new_costs[new_action] = None
+                    else:
+                        new_costs[new_action] = simplifier.simplify(
+                            old_cost.substitute(subs)
+                        )
+                new_problem.add_quality_metric(MinimizeActionCosts(new_costs))
+            else:
+                new_problem.add_quality_metric(qm)
 
         return CompilerResult(
             new_problem,
