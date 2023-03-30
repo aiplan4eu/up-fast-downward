@@ -3,13 +3,12 @@ import os.path
 import sys
 import unified_planning as up
 from functools import partial
-from typing import Dict, Tuple, List, cast
 
 from typing import Callable, Optional, Union
-from unified_planning.model import Action, FNode, Problem, ProblemKind, MinimizeActionCosts, Expression
+from unified_planning.model import FNode, Problem, ProblemKind, MinimizeActionCosts
 from unified_planning.model.action import InstantaneousAction
 from unified_planning.engines.compilers.utils import lift_action_instance
-from unified_planning.engines.compilers.grounder import Grounder
+from unified_planning.engines.compilers.grounder import Grounder, ground_minimize_action_costs_metric
 from unified_planning.engines.engine import Engine, Simplifier
 from unified_planning.engines import Credits
 from unified_planning.engines.mixins.compiler import CompilationKind
@@ -333,20 +332,7 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         for qm in problem.quality_metrics:
             if isinstance(qm, MinimizeActionCosts):
                 simplifier = Simplifier(new_problem)
-                new_costs: Dict[Action, Optional[FNode]] = {}
-                for new_action, (old_action, params) in trace_back_map.items():
-                    subs = cast(
-                        Dict[Expression, Expression],
-                        dict(zip(old_action.parameters, params)),
-                    )
-                    old_cost = qm.get_action_cost(old_action)
-                    if old_cost is None:
-                        new_costs[new_action] = None
-                    else:
-                        new_costs[new_action] = simplifier.simplify(
-                            old_cost.substitute(subs)
-                        )
-                new_problem.add_quality_metric(MinimizeActionCosts(new_costs))
+                ground_minimize_action_costs_metric(qm, trace_back_map, simplifier)
             else:
                 new_problem.add_quality_metric(qm)
 

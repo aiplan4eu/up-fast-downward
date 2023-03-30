@@ -32,7 +32,7 @@ class FastDownwardPDDLPlannerBase(PDDLPlanner):
         fast_downward_search_time_limit: Optional[str] = None,
         log_level: str = "info",
     ):
-        super().__init__()
+        super().__init__(rewrite_bool_assignments=True)
         self._fd_alias = fast_downward_alias
         self._fd_search_config = fast_downward_search_config
         self._fd_anytime_alias = fast_downward_anytime_alias
