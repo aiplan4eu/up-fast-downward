@@ -6,10 +6,11 @@ from functools import partial
 
 from typing import Callable, Optional, Union
 from unified_planning.model import FNode, Problem, ProblemKind, MinimizeActionCosts
+from unified_planning.model.walkers import Simplifier
 from unified_planning.model.action import InstantaneousAction
 from unified_planning.engines.compilers.utils import lift_action_instance
 from unified_planning.engines.compilers.grounder import Grounder, ground_minimize_action_costs_metric
-from unified_planning.engines.engine import Engine, Simplifier
+from unified_planning.engines.engine import Engine
 from unified_planning.engines import Credits
 from unified_planning.engines.mixins.compiler import CompilationKind
 from unified_planning.engines.mixins.compiler import CompilerMixin
