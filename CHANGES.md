@@ -1,4 +1,9 @@
 # Release notes
+UP Fast Downward 0.2.1
+- follow changes in up:
+  add and rename fluents in problem kind; This enables the Fast Downward
+  integration to use the values of static numeric fluents for action costs.
+- add MinimizeActionsCost metric to both grounders
 
 UP Fast Downward 0.2.0
 - FastDownwardPDDLPlanner:
