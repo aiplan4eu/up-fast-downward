@@ -1,4 +1,8 @@
 # Release notes
+UP Fast Downward 0.2.2
+- follow changes in up:
+  added support to native forall over effects
+
 UP Fast Downward 0.2.1
 - follow changes in up:
   add and rename fluents in problem kind; This enables the Fast Downward
@@ -17,7 +21,7 @@ UP Fast Downward 0.2.0
 - FastDownwardOptimalPDDLPlanner:
   - support setting the log level used by Fast Downward
 - FastDownwardGrounder:
-  - follow changes made in UP 
+  - follow changes made in UP
 - credits: mention people behind the heuristics we use in the default
   configurations
 - use latest Fast Downward version
