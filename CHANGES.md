@@ -1,4 +1,10 @@
 # Release notes
+UP Fast Downward 0.2.2
+- exploit better support for anytime planners in the up: this is not
+  a functional change but most of the necessary functionality is now provided
+  by the up library, so we du not have to duplicate it in the engine
+  integration.
+
 UP Fast Downward 0.2.1
 - follow changes in up:
   add and rename fluents in problem kind; This enables the Fast Downward
