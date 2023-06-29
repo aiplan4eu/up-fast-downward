@@ -193,6 +193,7 @@ class FastDownwardPDDLPlanner(FastDownwardMixin, PDDLAnytimePlanner):
         supported_kind.set_effects_kind("CONDITIONAL_EFFECTS")
         supported_kind.set_effects_kind("STATIC_FLUENTS_IN_BOOLEAN_ASSIGNMENTS")
         supported_kind.set_effects_kind("FLUENTS_IN_BOOLEAN_ASSIGNMENTS")
+        supported_kind.set_effects_kind("FORALL_EFFECTS")
         supported_kind.set_quality_metrics("ACTIONS_COST")
         supported_kind.set_actions_cost_kind("STATIC_FLUENTS_IN_ACTIONS_COST")
         supported_kind.set_quality_metrics("PLAN_LENGTH")
