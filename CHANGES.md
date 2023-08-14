@@ -1,4 +1,7 @@
 # Release notes
+UP Fast Downward 0.3.0
+- use Fast Downward 23.06
+
 UP Fast Downward 0.2.3
 - follow changes in up:
   added support to native forall over effects
