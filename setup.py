@@ -30,10 +30,10 @@ except ImportError:
 
 
 FAST_DOWNWARD_REPO = 'https://github.com/aibasel/downward.git'
-#FAST_DOWNWARD_RELEASE = 'release-22.12'
-FAST_DOWNWARD_RELEASE = None
+FAST_DOWNWARD_RELEASE = 'release-23.06'
+#FAST_DOWNWARD_RELEASE = None
 # CHANGESET is ignored if release is not None
-FAST_DOWNWARD_CHANGESET = 'c23fe3eeb7e93b9aa5094cd2d969854439c7c5bc'
+FAST_DOWNWARD_CHANGESET = 'bd3c63647a42c9a5f103402615ca991d23a88d55'
 
 
 def clone_and_compile_fast_downward():
@@ -70,7 +70,7 @@ class install_fast_downward_develop(develop):
 long_description = "This package makes the [Fast Downward](https://www.fast-downward.org/) planning system available in the [unified_planning library](https://github.com/aiplan4eu/unified-planning) by the [AIPlan4EU project](https://www.aiplan4eu-project.eu/)."
 
 setup(name='up_fast_downward',
-      version='0.2.3',
+      version='0.3.0',
       description='Unified Planning Integration of the Fast Downward planning system',
       long_description=long_description,
       long_description_content_type="text/markdown",
