@@ -49,11 +49,10 @@ jobs:
 
       - name: Run basic test 
         run: |
-          ls /home/runner/work
-          ls /home/runner/work/dist
+          ls /home/runner/work/unified-planning
           cd misc/
           pwd
-          PIP_FIND_LINKS='/home/runner/work/dist' tox -e unified-planning
+          PIP_FIND_LINKS='/home/runner/work/unified-planning/dist' tox -e unified-planning
 
 #
 #  build-win-and-mac:
