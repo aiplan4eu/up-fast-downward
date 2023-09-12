@@ -1,6 +1,8 @@
 ---
 name: Ubuntu
 
+on: push
+
 jobs:
   run_tox_tests:
     name: Test planner integration
