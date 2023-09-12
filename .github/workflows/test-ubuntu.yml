@@ -1,7 +1,7 @@
 ---
 name: Ubuntu
 
-on: push
+#on: push
 
 jobs:
   run_tox_tests:
@@ -24,8 +24,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip3 install tox
-          pip3 install unified-planning
-          pip3 install up-fast-downward
 
       - name: Run driver, translator and search tests
         run: |
