@@ -50,7 +50,7 @@ jobs:
       - name: Run basic test 
         run: |
           cd misc/
-          PIP_FIND_LINKS='dist' tox -e unified-planning
+          PIP_FIND_LINKS='../dist' tox -e unified-planning
 
 #
 #  build-win-and-mac:
