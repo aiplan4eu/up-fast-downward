@@ -1,0 +1,32 @@
+---
+name: Ubuntu
+
+jobs:
+  run_tox_tests:
+    name: Test planner integration
+    runs-on: ${{ matrix.version.ubuntu }}
+    strategy:
+      matrix:
+        version:
+          - {ubuntu: ubuntu-20.04, python: '3.8'}
+          - {ubuntu: ubuntu-22.04, python: '3.10'}
+    steps:
+
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.version.python }}
+
+      - name: Install dependencies
+        run: |
+          pip3 install tox
+          pip3 install unified-planning
+          pip3 install up-fast-downward
+
+      - name: Run driver, translator and search tests
+        run: |
+          cd misc/
+          tox -e unified-planning
+
+
+...
