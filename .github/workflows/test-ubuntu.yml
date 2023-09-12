@@ -1,7 +1,7 @@
 ---
 name: Ubuntu
 
-#on: push
+on: push
 
 jobs:
   run_tox_tests:

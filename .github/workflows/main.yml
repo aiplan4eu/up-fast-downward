@@ -73,7 +73,7 @@ jobs:
       - name: Build 64-bit wheel
         run: python -m cibuildwheel --output-dir dist
         env:
-          CIBW_BUILD: cp27-win_amd64
+          CIBW_BUILD: cp36-win_amd64
           DISTUTILS_USE_SDK: 1
           MSSdk: 1
 
@@ -84,7 +84,7 @@ jobs:
       - name: Build 32-bit wheel
         run: python -m cibuildwheel --output-dir dist
         env:
-          CIBW_BUILD: cp27-win32
+          CIBW_BUILD: cp36-win32
           DISTUTILS_USE_SDK: 1
           MSSdk: 1
 
