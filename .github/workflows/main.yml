@@ -49,10 +49,11 @@ jobs:
 
       - name: Run basic test 
         run: |
-          ls /home/runner/work/up-fast-downward
+          ls /home/runner/work/up-fast-downward/up-fast-downward
+          ls /home/runner/work/up-fast-downward/up-fast-downward/dist
           cd misc/
           pwd
-          PIP_FIND_LINKS='/home/runner/work/up-fast-downward/dist' tox -e unified-planning
+          PIP_FIND_LINKS='/home/runner/work/up-fast-downward/up-fast-downward/dist' tox -e unified-planning
 
 #
 #  build-win-and-mac:
