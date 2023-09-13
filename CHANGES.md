@@ -1,4 +1,7 @@
 # Release notes
+UP Fast Downward 0.3.1
+- fix windows wheel
+
 UP Fast Downward 0.3.0
 - use Fast Downward 23.06
 

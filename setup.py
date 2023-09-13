@@ -49,7 +49,11 @@ def clone_and_compile_fast_downward():
     if FAST_DOWNWARD_RELEASE is None:
         subprocess.run(['git', 'checkout', FAST_DOWNWARD_CHANGESET])
     print("Building Fast Downward (this can take some time)...")
-    build = subprocess.run(['python', 'build.py'])
+    build = subprocess.run(['python', 'build.py', 'release'],
+                           stdout = subprocess.PIPE, stderr = subprocess.PIPE,
+                           universal_newlines = True)
+#    print(build.stdout)
+#    print(build.stderr)
     os.chdir(curr_dir)
 
 
@@ -70,7 +74,7 @@ class install_fast_downward_develop(develop):
 long_description = "This package makes the [Fast Downward](https://www.fast-downward.org/) planning system available in the [unified_planning library](https://github.com/aiplan4eu/unified-planning) by the [AIPlan4EU project](https://www.aiplan4eu-project.eu/)."
 
 setup(name='up_fast_downward',
-      version='0.3.0',
+      version='0.3.1',
       description='Unified Planning Integration of the Fast Downward planning system',
       long_description=long_description,
       long_description_content_type="text/markdown",
