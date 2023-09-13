@@ -121,11 +121,11 @@ jobs:
       - name: Run basic test 
         run: |
 
-          echo ${GITHUB_WORKSPACE}
+          echo ${{ github.workspace }}
           pwd
           cd misc/
           #PIP_FIND_LINKS='/home/runner/work/up-fast-downward/up-fast-downward/dist' tox -e unified-planning
-          PIP_FIND_LINKS='${{GITHUB_WORKSPACE}}/dist' tox -e unified-planning
+          PIP_FIND_LINKS='${{ github.workspace }}/dist' tox -e unified-planning
 
 
   run-tox-test-windows:
@@ -152,8 +152,8 @@ jobs:
         run: |
 
           cd misc/
-          echo ${GITHUB_WORKSPACE}
-          $env:PIP_FIND_LINKS='${{GITHUB_WORKSPACE}}\dist'; tox -e unified-planning
+          echo ${{ github.workspace }}
+          $env:PIP_FIND_LINKS='${{ github.workspace }}\dist'; tox -e unified-planning
 
 
 #  deploy-pypi:
