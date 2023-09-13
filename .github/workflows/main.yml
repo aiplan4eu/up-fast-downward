@@ -146,31 +146,31 @@ jobs:
           $env:PIP_FIND_LINKS='${{ github.workspace }}\dist'; tox -e unified-planning
 
 
-#  deploy-pypi:
-#    runs-on: ubuntu-latest
-#    needs: [run-tox-test, run-tox-test-windows]
-#    if: github.ref == 'refs/heads/main' # We only deploy on master commits
-#
-#    steps:
-#      - uses: actions/download-artifact@master
-#        with:
-#          name: linux-wheels
-#          path: dist
-#
-#      - uses: actions/download-artifact@master
-#        with:
-#          name: windows-wheel
-#          path: dist
-#
-#      - uses: actions/download-artifact@master
-#        with:
-#          name: mac-wheel
-#          path: dist
-#
-#      - run: ls dist
-#
-#      - name: Upload to PyPI
-#        uses: pypa/gh-action-pypi-publish@master
-#        with:
-#          user: __token__
-#          password: ${{ secrets.PYPI_API_TOKEN }}
+  deploy-pypi:
+    runs-on: ubuntu-latest
+    needs: [run-tox-test, run-tox-test-windows]
+    if: github.ref == 'refs/heads/main' # We only deploy on master commits
+
+    steps:
+      - uses: actions/download-artifact@master
+        with:
+          name: linux-wheels
+          path: dist
+
+      - uses: actions/download-artifact@master
+        with:
+          name: windows-wheel
+          path: dist
+
+      - uses: actions/download-artifact@master
+        with:
+          name: mac-wheel
+          path: dist
+
+      - run: ls dist
+
+      - name: Upload to PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
