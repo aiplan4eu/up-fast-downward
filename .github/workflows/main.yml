@@ -4,6 +4,7 @@ on: push
 
 jobs:
   build-linux:
+    name: Build linux Python wheels
     runs-on: ubuntu-latest
 
     steps:
