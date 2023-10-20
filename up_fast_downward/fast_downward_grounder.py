@@ -83,7 +83,7 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
     def resulting_problem_kind(
         problem_kind: ProblemKind, compilation_kind: Optional[CompilationKind] = None
     ) -> ProblemKind:
-        return ProblemKind(problem_kind.features, problem_kind.get_version())
+        return problem_kind.clone()
 
     def _compile(
         self, problem: "up.model.AbstractProblem", compilation_kind: "CompilationKind"
@@ -208,7 +208,7 @@ class FastDownwardGrounder(Engine, CompilerMixin):
     def resulting_problem_kind(
         problem_kind: ProblemKind, compilation_kind: Optional[CompilationKind] = None
     ) -> ProblemKind:
-        resulting_problem_kind = ProblemKind(problem_kind.features, problem_kind.get_version())
+        resulting_problem_kind = problem_kind.clone()
         resulting_problem_kind.unset_conditions_kind("DISJUNCTIVE_CONDITIONS")
         return resulting_problem_kind
 
