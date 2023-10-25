@@ -129,7 +129,7 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
                 schematic_up_action = writer.get_item_named(action.name)
                 params = (
                     writer.get_item_named(p)
-                    for p in atom.args[: len(action.parameters)]
+                    for p in atom.args[:action.num_external_parameters]
                 )
                 up_params = tuple(exp_manager.ObjectExp(p) for p in params)
                 grounding_action_map[schematic_up_action].append(up_params)
