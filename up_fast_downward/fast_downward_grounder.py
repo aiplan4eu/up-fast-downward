@@ -333,7 +333,7 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         new_problem.clear_quality_metrics()
         for qm in problem.quality_metrics:
             if isinstance(qm, MinimizeActionCosts):
-                simplifier = Simplifier(new_problem)
+                simplifier = Simplifier(new_problem.environment, new_problem)
                 ground_minimize_action_costs_metric(qm, trace_back_map, simplifier)
             else:
                 new_problem.add_quality_metric(qm)
