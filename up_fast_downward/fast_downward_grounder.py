@@ -1,4 +1,5 @@
 from collections import defaultdict
+from io import StringIO
 import os.path
 import sys
 import unified_planning as up
@@ -103,6 +104,8 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         pddl_domain = writer.get_domain().split("\n")
 
         orig_path = list(sys.path)
+        orig_stdout = sys.stdout
+        sys.stdout = StringIO()
         path = os.path.join(
             os.path.dirname(__file__), "downward/builds/release/bin/translate"
         )
@@ -121,6 +124,7 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         fast_downward_normalize.normalize(task)
         prog = prolog_program(task)
         model = compute_model(prog)
+        sys.stdout = orig_stdout
         grounding_action_map = defaultdict(list)
         exp_manager = problem.environment.expression_manager
         for atom in model:
@@ -287,6 +291,8 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         pddl_domain = writer.get_domain().split("\n")
 
         orig_path = list(sys.path)
+        orig_stdout = sys.stdout
+        sys.stdout = StringIO()
         path = os.path.join(
             os.path.dirname(__file__), "downward/builds/release/bin/translate"
         )
@@ -303,6 +309,7 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         fast_downward_normalize.normalize(task)
 
         _, _, actions, goals, axioms, _ = fd_instantiate.explore(task)
+        sys.stdout = orig_stdout
 
         if axioms:
             raise UPUnsupportedProblemTypeError(axioms_msg)
