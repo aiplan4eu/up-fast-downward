@@ -1,12 +1,14 @@
+from itertools import count
 import pkg_resources
 import sys
 import unified_planning as up
 from typing import Callable, Iterator, IO, List, Optional, Tuple, Union
-from unified_planning.model import ProblemKind
+from unified_planning.model import ProblemKind, InstantaneousAction
 from unified_planning.engines import OptimalityGuarantee
 from unified_planning.engines import PlanGenerationResultStatus as ResultStatus
 from unified_planning.engines import PDDLAnytimePlanner, PDDLPlanner
 from unified_planning.engines import OperationMode, Credits
+from unified_planning.shortcuts import BoolType, MinimizeActionCosts
 from unified_planning.engines.results import LogLevel, LogMessage, PlanGenerationResult
 
 credits = {
@@ -257,3 +259,82 @@ class FastDownwardOptimalPDDLPlanner(FastDownwardMixin, PDDLPlanner):
     @staticmethod
     def satisfies(optimality_guarantee: OptimalityGuarantee) -> bool:
         return True
+
+    # To avoid the introduction of axioms with complicated goals, we introduce
+    # a separate goal action (later to be removed from the plan)
+    def _solve(
+        self,
+        problem: "up.model.AbstractProblem",
+        heuristic: Optional[Callable[["up.model.state.State"], Optional[float]]] = None,
+        timeout: Optional[float] = None,
+        output_stream: Optional[Union[Tuple[IO[str], IO[str]], IO[str]]] = None,
+    ) -> "up.engines.results.PlanGenerationResult":
+        def get_new_name(problem, prefix):
+            for num in count():
+                candidate = f"{prefix}{num}"
+                if not problem.has_name(candidate):
+                    return candidate
+
+        assert isinstance(problem, up.model.Problem)
+
+        modified_problem = problem.clone()
+        # add a new goal atom (initially false) plus an action that has the
+        # original goal as precondition and sets the new goal atom
+        goal_fluent_name = get_new_name(modified_problem, "goal")
+        goal_fluent = modified_problem.add_fluent(
+            goal_fluent_name, BoolType(), default_initial_value=False
+        )
+        goal_action_name = get_new_name(modified_problem, "reach_goal")
+        goal_action = InstantaneousAction(goal_action_name)
+        for goal in modified_problem.goals:
+            goal_action.add_precondition(goal)
+        goal_action.add_effect(goal_fluent, True)
+        modified_problem.add_action(goal_action)
+        modified_problem.clear_goals()
+        modified_problem.add_goal(goal_fluent)
+        if modified_problem.quality_metrics and isinstance(
+            modified_problem.quality_metrics[0], MinimizeActionCosts
+        ):
+            m = modified_problem.quality_metrics[0]
+            action_costs = m.costs
+            action_costs[goal_action] = 1
+            metric = MinimizeActionCosts(action_costs, m.default, m.environment)
+            modified_problem.clear_quality_metrics()
+            modified_problem.add_quality_metric(metric)
+
+        return super()._solve(modified_problem, heuristic, timeout, output_stream)
+
+    # overwrite plan extraction to remove the newly introduced goal action from
+    # the end of the plan
+    def _plan_from_file(
+        self,
+        problem: "up.model.Problem",
+        plan_filename: str,
+        get_item_named: Callable[
+            [str],
+            Union[
+                "up.model.Type",
+                "up.model.Action",
+                "up.model.Fluent",
+                "up.model.Object",
+                "up.model.Parameter",
+                "up.model.Variable",
+                "up.model.multi_agent.Agent",
+            ],
+        ],
+    ) -> "up.plans.Plan":
+        """
+        Takes a problem, a filename and a map of renaming and returns the plan parsed from the file.
+        :param problem: The up.model.problem.Problem instance for which the plan is generated.
+        :param plan_filename: The path of the file in which the plan is written.
+        :param get_item_named: A function that takes a name and returns the original up.model element instance
+            linked to that renaming.
+        :return: The up.plans.Plan corresponding to the parsed plan from the file
+        """
+        with open(plan_filename) as plan:
+            plan_string = plan.read()
+            # We remove the last two lines (goal action plus a comment with the
+            # cost) from the plan string
+            plan_string = plan_string.split("\n")[:-3]
+            plan_string = "\n".join(plan_string)
+            return self._plan_from_str(problem, plan_string, get_item_named)
