@@ -183,7 +183,7 @@ class FastDownwardPDDLPlanner(FastDownwardMixin, PDDLAnytimePlanner):
 
     @staticmethod
     def supported_kind() -> "ProblemKind":
-        supported_kind = ProblemKind()
+        supported_kind = ProblemKind(version=2)
         supported_kind.set_problem_class("ACTION_BASED")
         supported_kind.set_typing("FLAT_TYPING")
         supported_kind.set_typing("HIERARCHICAL_TYPING")
@@ -198,6 +198,7 @@ class FastDownwardPDDLPlanner(FastDownwardMixin, PDDLAnytimePlanner):
         supported_kind.set_effects_kind("FORALL_EFFECTS")
         supported_kind.set_quality_metrics("ACTIONS_COST")
         supported_kind.set_actions_cost_kind("STATIC_FLUENTS_IN_ACTIONS_COST")
+        supported_kind.set_actions_cost_kind("INT_NUMBERS_IN_ACTIONS_COST")
         supported_kind.set_quality_metrics("PLAN_LENGTH")
         return supported_kind
 
@@ -238,7 +239,7 @@ class FastDownwardOptimalPDDLPlanner(FastDownwardMixin, PDDLPlanner):
 
     @staticmethod
     def supported_kind() -> "ProblemKind":
-        supported_kind = ProblemKind()
+        supported_kind = ProblemKind(version=2)
         supported_kind.set_problem_class("ACTION_BASED")
         supported_kind.set_typing("FLAT_TYPING")
         supported_kind.set_typing("HIERARCHICAL_TYPING")
@@ -249,6 +250,7 @@ class FastDownwardOptimalPDDLPlanner(FastDownwardMixin, PDDLPlanner):
         supported_kind.set_conditions_kind("EQUALITIES")
         supported_kind.set_quality_metrics("ACTIONS_COST")
         supported_kind.set_actions_cost_kind("STATIC_FLUENTS_IN_ACTIONS_COST")
+        supported_kind.set_actions_cost_kind("INT_NUMBERS_IN_ACTIONS_COST")
         supported_kind.set_quality_metrics("PLAN_LENGTH")
         return supported_kind
 

@@ -1,4 +1,7 @@
 # Release notes
+UP Fast Downward 0.3.2
+- support UP problem kind version 2
+
 UP Fast Downward 0.3.1
 - fix windows wheel
 
