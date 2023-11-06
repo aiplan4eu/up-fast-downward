@@ -103,6 +103,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          pip3 install --pre unified-planning
           pip3 install tox
 
       - name: Run basic test 
@@ -137,6 +138,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          pip3 install --pre unified-planning
           pip3 install tox
 
       - name: Run basic test 
