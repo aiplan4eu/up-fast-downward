@@ -1,4 +1,8 @@
 # Release notes
+UP Fast Downward 0.3.3
+- fix bug in fast-downward-reachability grounder
+- silence output in grounders
+
 UP Fast Downward 0.3.2
 - support UP problem kind version 2
 
