@@ -341,5 +341,4 @@ class FastDownwardOptimalPDDLPlanner(FastDownwardMixin, PDDLPlanner):
             # Remove the last line (= goal action) from the plan string.
             plan_string = plan_string[:-2]
             plan_string = "\n".join(plan_string)
-            print(plan_string)
             return self._plan_from_str(problem, plan_string, get_item_named)
