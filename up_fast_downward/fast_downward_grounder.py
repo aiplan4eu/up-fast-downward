@@ -52,7 +52,7 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
 
     @staticmethod
     def supported_kind() -> ProblemKind:
-        supported_kind = ProblemKind()
+        supported_kind = ProblemKind(version=2)
         supported_kind.set_problem_class("ACTION_BASED")
         supported_kind.set_typing("FLAT_TYPING")
         supported_kind.set_typing("HIERARCHICAL_TYPING")
@@ -65,6 +65,7 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         supported_kind.set_effects_kind("FLUENTS_IN_BOOLEAN_ASSIGNMENTS")
         supported_kind.set_quality_metrics("ACTIONS_COST")
         supported_kind.set_actions_cost_kind("STATIC_FLUENTS_IN_ACTIONS_COST")
+        supported_kind.set_actions_cost_kind("INT_NUMBERS_IN_ACTIONS_COST")
         supported_kind.set_quality_metrics("PLAN_LENGTH")
         supported_kind.set_conditions_kind("UNIVERSAL_CONDITIONS")
         supported_kind.set_conditions_kind("EXISTENTIAL_CONDITIONS")
@@ -82,7 +83,7 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
     def resulting_problem_kind(
         problem_kind: ProblemKind, compilation_kind: Optional[CompilationKind] = None
     ) -> ProblemKind:
-        return ProblemKind(problem_kind.features)
+        return problem_kind.clone()
 
     def _compile(
         self, problem: "up.model.AbstractProblem", compilation_kind: "CompilationKind"
@@ -167,7 +168,7 @@ class FastDownwardGrounder(Engine, CompilerMixin):
 
     @staticmethod
     def supported_kind() -> ProblemKind:
-        supported_kind = ProblemKind()
+        supported_kind = ProblemKind(version=2)
         supported_kind.set_problem_class("ACTION_BASED")
         supported_kind.set_typing("FLAT_TYPING")
         supported_kind.set_typing("HIERARCHICAL_TYPING")
@@ -179,6 +180,7 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         supported_kind.set_effects_kind("FLUENTS_IN_BOOLEAN_ASSIGNMENTS")
         supported_kind.set_quality_metrics("ACTIONS_COST")
         supported_kind.set_actions_cost_kind("STATIC_FLUENTS_IN_ACTIONS_COST")
+        supported_kind.set_actions_cost_kind("INT_NUMBERS_IN_ACTIONS_COST")
         supported_kind.set_quality_metrics("PLAN_LENGTH")
 
         # We don't support allquantified conditions because they can lead
@@ -208,9 +210,9 @@ class FastDownwardGrounder(Engine, CompilerMixin):
     def resulting_problem_kind(
         problem_kind: ProblemKind, compilation_kind: Optional[CompilationKind] = None
     ) -> ProblemKind:
-        orig_features = problem_kind.features
-        features = set.difference(orig_features, {"DISJUNCTIVE_CONDITIONS"})
-        return ProblemKind(features)
+        resulting_problem_kind = problem_kind.clone()
+        resulting_problem_kind.unset_conditions_kind("DISJUNCTIVE_CONDITIONS")
+        return resulting_problem_kind
 
     def _get_fnode(
         self,
