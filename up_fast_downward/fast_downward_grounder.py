@@ -6,7 +6,7 @@ import sys
 import unified_planning as up
 from functools import partial
 
-from typing import Callable, Optional, Union, Set
+from typing import Callable, Mapping, Optional, Union, Set, Tuple
 from unified_planning.model import FNode, Problem, ProblemKind, MinimizeActionCosts
 from unified_planning.model.walkers import Simplifier
 from unified_planning.model.action import InstantaneousAction
@@ -110,7 +110,6 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         pddl_problem = writer.get_problem().split("\n")
         pddl_domain = writer.get_domain().split("\n")
 
-
         # perform Fast Downward translation until (and including)
         # the reachability analysis
         orig_path = list(sys.path)
@@ -136,7 +135,6 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         model = compute_model(prog)
         sys.stdout = orig_stdout
         sys.path = orig_path
-
 
         # The model contains an overapproximation of the reachable components
         # of the task, in particular also of the reachable ground actions.
@@ -223,6 +221,7 @@ class FastDownwardGrounder(Engine, CompilerMixin):
     ) -> ProblemKind:
         resulting_problem_kind = problem_kind.clone()
         resulting_problem_kind.unset_conditions_kind("DISJUNCTIVE_CONDITIONS")
+        resulting_problem_kind.unset_conditions_kind("EXISTENTIAL_CONDITIONS")
         return resulting_problem_kind
 
     def _get_fnode(
@@ -241,6 +240,7 @@ class FastDownwardGrounder(Engine, CompilerMixin):
             ],
         ],
     ) -> FNode:
+        """Translates a Fast Downward fact back into a FNode."""
         exp_manager = problem.environment.expression_manager
         fluent = get_item_named(fact.predicate)
         args = [problem.object(o) for o in fact.args]
@@ -267,6 +267,9 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         ],
         used_action_names: Set[str],
     ) -> InstantaneousAction:
+        """Takes a Fast Downward ground actions and builds it with the
+        vobabulary of the UP."""
+
         def fnode(fact):
             return self._get_fnode(fact, problem, get_item_named)
 
@@ -294,30 +297,43 @@ class FastDownwardGrounder(Engine, CompilerMixin):
             action.add_effect(fnode(fact), False, c)
         return action
 
-    def _add_goal_action_for_complicated_goal(
+    def _add_goal_action_if_complicated_goal(
         self, problem: "up.model.AbstractProblem"
-    ) -> bool:
+    ) -> Tuple[
+        "up.model.AbstractProblem",
+        Optional["up.model.InstantaneousAction"],
+        Optional[
+            Mapping["up.model.InstantaneousAction", "up.model.InstantaneousAction"]
+        ],
+    ]:
+        """
+        Tests whether the given problem has a complicated goal (not just
+        a conjunction of positive and negative fluents). If yes, it returns
+        a transformed problem with an artificial goal action and a single goal
+        fluent, where the existing actions are modified to delete the goal fluent.
+        The second return value is the new goal action. The third return value
+        maps the actions of the modified problem to the actions of the original
+        problem. If the goal was not complicated, it returns the original
+        problem, None, and None.
+        """
         COMPLICATED_KINDS = (
-            OperatorKind.OR,
-            OperatorKind.IMPLIES,
-            OperatorKind.IFF,
             OperatorKind.EXISTS,
             OperatorKind.FORALL,
+            OperatorKind.IFF,
+            OperatorKind.IMPLIES,
+            OperatorKind.OR,
         )
 
         def is_complicated_goal(fnode):
-            if fnode.node_type in COMPLICATED_KINDS:
+            if fnode.node_type in COMPLICATED_KINDS or (
+                fnode.node_type == OperatorKind.NOT
+                and fnode.args[0].node_type != OperatorKind.FLUENT_EXP
+            ):
                 return True
-            if fnode.node_type == OperatorKind.NOT:
-                assert len(fnode.args) == 1
-                if fnode.args[0].node_type != OperatorKind.FLUENT_EXP:
-                    return True
             return any(is_complicated_goal(arg) for arg in fnode.args)
 
-        def has_complicated_goal(problem):
-            return any(is_complicated_goal(g) for g in problem.goals)
-
-        if not has_complicated_goal(problem):
+        if not any(is_complicated_goal(g) for g in problem.goals):
+            # no complicated goal
             return problem, None, None
         else:
             # To avoid the introduction of axioms with complicated goals, we
@@ -325,30 +341,7 @@ class FastDownwardGrounder(Engine, CompilerMixin):
             # map_back)
             return utils.introduce_artificial_goal_action(problem, True)
 
-    def _compile(
-        self, problem: "up.model.AbstractProblem", compilation_kind: "CompilationKind"
-    ) -> CompilerResult:
-        """
-        Takes an instance of a :class:`~up.model.Problem` and the `GROUNDING`
-        :class:`~up.engines.CompilationKind` and returns a `CompilerResult`
-        where the problem does not have actions with parameters; so every
-        action is grounded.
-        :param problem: The instance of the `Problem` that must be grounded.
-        :param compilation_kind: The `CompilationKind` that must be applied on
-            the given problem; only `GROUNDING` is supported by this compiler
-        :return: The resulting `CompilerResult` data structure.
-        """
-        assert isinstance(problem, Problem)
-        (
-            problem,
-            artificial_goal_action,
-            modified_to_orig_action,
-        ) = self._add_goal_action_for_complicated_goal(problem)
-
-        writer = up.io.PDDLWriter(problem)
-        pddl_problem = writer.get_problem().split("\n")
-        pddl_domain = writer.get_domain().split("\n")
-
+    def _instantiate_with_fast_downward(self, pddl_problem, pddl_domain):
         orig_path = list(sys.path)
         orig_stdout = sys.stdout
         sys.stdout = StringIO()
@@ -369,20 +362,45 @@ class FastDownwardGrounder(Engine, CompilerMixin):
 
         _, _, actions, goals, axioms, _ = fd_instantiate.explore(task)
         sys.stdout = orig_stdout
+        sys.path = orig_path
+        return actions, goals, axioms
+
+    def _compile(
+        self, problem: "up.model.AbstractProblem", compilation_kind: "CompilationKind"
+    ) -> CompilerResult:
+        assert isinstance(problem, Problem)
+        # If necessary, perform goal transformation to avoid the introduction
+        # of axioms.
+        (
+            problem,
+            artificial_goal_action,
+            modified_to_orig_action,
+        ) = self._add_goal_action_if_complicated_goal(problem)
+
+        # Ground the problem with Fast Downward
+        writer = up.io.PDDLWriter(problem)
+        pddl_problem = writer.get_problem().split("\n")
+        pddl_domain = writer.get_domain().split("\n")
+
+        actions, goals, axioms = self._instantiate_with_fast_downward(
+            pddl_problem, pddl_domain
+        )
 
         if axioms:
             raise UPUnsupportedProblemTypeError(axioms_msg)
 
+        # Rebuild the ground problem from Fast Downward in the UP
         new_problem = problem.clone()
         new_problem.name = f"{self.name}_{problem.name}"
         new_problem.clear_actions()
         new_problem.clear_goals()
 
         trace_back_map = dict()
-
         used_action_names = set()
-
         exp_manager = problem.environment.expression_manager
+
+        # Construct Fast Downward ground actions in the UP and remember the
+        # mapping from the ground actions to the original actions.
         for a in actions:
             inst_action = self._transform_action(
                 a, new_problem, writer.get_item_named, used_action_names
@@ -399,10 +417,10 @@ class FastDownwardGrounder(Engine, CompilerMixin):
                 trace_back_map[inst_action] = (schematic_up_act, up_params)
             new_problem.add_action(inst_action)
 
+        # Construct Fast Downward goals in the UP
         for g in goals:
             fnode = self._get_fnode(g, new_problem, writer.get_item_named)
             new_problem.add_goal(fnode)
-        sys.path = orig_path
 
         new_problem.clear_quality_metrics()
         for qm in problem.quality_metrics:
@@ -412,6 +430,10 @@ class FastDownwardGrounder(Engine, CompilerMixin):
             else:
                 new_problem.add_quality_metric(qm)
 
+        # We need to use a more complicated function for mapping back the
+        # actions because "partial(lift_action_instance, map=trace_back_map)"
+        # cannot map an action to None (we need this for the artificial goal
+        # action).
         mbai = lambda x: (
             None
             if trace_back_map[x.action] is None
@@ -421,9 +443,5 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         return CompilerResult(
             new_problem,
             mbai,
-            #            partial(lift_action_instance, map=trace_back_map),
             self.name,
         )
-
-    def destroy(self):
-        pass

@@ -1,21 +1,28 @@
 from itertools import count
 from unified_planning.shortcuts import BoolType, MinimizeActionCosts
 from unified_planning.model import InstantaneousAction
-
-# This function clones the task and adds an artificial goal atom and an
-# additional action that achieves it when the original goal is satisfied.
-# Parameter other_actions_destroy_goal indicates whether all original actions
-# should destroy the artificial goal atom. This is not necessary if we run our
-# planner on the transformed problem (because search terminates once it finds
-# a plan).  If we use this in grounding,  we do not know what others do with
-# the task.  Thus we need this option to ensure that for every plan of the
-# transformed task, omitting all occurrences of the artificial goal action
-# gives a plan for the original task.
+from typing import Mapping, Optional, Tuple
 
 
 def introduce_artificial_goal_action(
     problem: "up.model.AbstractProblem", other_actions_destroy_goal=False
-) -> "up.model.AbstractProblem":
+) -> Tuple[
+    "up.model.AbstractProblem",
+    Optional["up.model.InstantaneousAction"],
+    Optional[Mapping["up.model.InstantaneousAction", "up.model.InstantaneousAction"]],
+]:
+    """
+    Clones the task and adds an artificial goal atom and an additional action
+    that achieves it when the original goal is satisfied.  Parameter
+    other_actions_destroy_goal indicates whether all original actions should
+    destroy the artificial goal atom. This is not necessary if we run our
+    planner on the transformed problem (because search terminates once it finds
+    a plan). If we use this in grounding, we do not know what others do with
+    the task. Thus we need this option to ensure that for every plan of the
+    transformed task, omitting all occurrences of the artificial goal action
+    gives a plan for the original task.
+    """
+
     def get_new_name(problem, prefix):
         for num in count():
             candidate = f"{prefix}{num}"
