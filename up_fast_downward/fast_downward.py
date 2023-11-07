@@ -112,6 +112,12 @@ class FastDownwardMixin:
             return ResultStatus.UNSOLVABLE_PROVEN
         if retval == 12:
             return ResultStatus.UNSOLVABLE_INCOMPLETELY
+        if retval == 34:
+            return ResultStatus.UNSUPPORTED_PROBLEM
+        if retval in (21, 23):
+            return ResultStatus.TIMEOUT
+        if retval in (20, 22):
+            return ResultStatus.MEMOUT
         else:
             return ResultStatus.INTERNAL_ERROR
 
