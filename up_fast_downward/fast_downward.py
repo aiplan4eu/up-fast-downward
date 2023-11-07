@@ -314,8 +314,11 @@ class FastDownwardOptimalPDDLPlanner(FastDownwardMixin, PDDLPlanner):
         with open(plan_filename) as plan:
             plan_string = plan.read()
             # Remove all comments from the plan string.
-            plan_string = [line for line in plan_string.split("\n")
-                           if not line.strip().startswith(";")]
+            plan_string = [
+                line
+                for line in plan_string.split("\n")
+                if not line.strip().startswith(";")
+            ]
             # Remove the last line (= goal action) from the plan string.
             plan_string = plan_string[:-2]
             plan_string = "\n".join(plan_string)

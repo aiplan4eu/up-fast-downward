@@ -12,9 +12,10 @@ from unified_planning.model import InstantaneousAction
 # transformed task, omitting all occurrences of the artificial goal action
 # gives a plan for the original task.
 
-def introduce_artificial_goal_action(problem: "up.model.AbstractProblem",
-    other_actions_destroy_goal=False) -> "up.model.AbstractProblem":
-    
+
+def introduce_artificial_goal_action(
+    problem: "up.model.AbstractProblem", other_actions_destroy_goal=False
+) -> "up.model.AbstractProblem":
     def get_new_name(problem, prefix):
         for num in count():
             candidate = f"{prefix}{num}"
@@ -26,14 +27,15 @@ def introduce_artificial_goal_action(problem: "up.model.AbstractProblem",
     # original goal as precondition and sets the new goal atom
     goal_fluent_name = get_new_name(modified_problem, "goal")
     goal_fluent = modified_problem.add_fluent(
-            goal_fluent_name, BoolType(), default_initial_value=False
-            )
+        goal_fluent_name, BoolType(), default_initial_value=False
+    )
 
     if other_actions_destroy_goal:
         for action in modified_problem.actions:
             action.add_effect(goal_fluent, False)
-    modified_to_orig_action = dict(elem for elem in zip(modified_problem.actions,
-                                                        problem.actions))
+    modified_to_orig_action = dict(
+        elem for elem in zip(modified_problem.actions, problem.actions)
+    )
 
     goal_action_name = get_new_name(modified_problem, "reach_goal")
     goal_action = InstantaneousAction(goal_action_name)
@@ -44,8 +46,8 @@ def introduce_artificial_goal_action(problem: "up.model.AbstractProblem",
     modified_problem.clear_goals()
     modified_problem.add_goal(goal_fluent)
     if modified_problem.quality_metrics and isinstance(
-            modified_problem.quality_metrics[0], MinimizeActionCosts
-            ):
+        modified_problem.quality_metrics[0], MinimizeActionCosts
+    ):
         m = modified_problem.quality_metrics[0]
         action_costs = m.costs
         action_costs[goal_action] = 1
