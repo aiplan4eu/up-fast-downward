@@ -1,22 +1,28 @@
 from collections import defaultdict
 from io import StringIO
+from itertools import count
 import os.path
 import sys
 import unified_planning as up
 from functools import partial
 
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, Set
 from unified_planning.model import FNode, Problem, ProblemKind, MinimizeActionCosts
 from unified_planning.model.walkers import Simplifier
 from unified_planning.model.action import InstantaneousAction
+from unified_planning.model.operators import OperatorKind
 from unified_planning.engines.compilers.utils import lift_action_instance
-from unified_planning.engines.compilers.grounder import Grounder, ground_minimize_action_costs_metric
+from unified_planning.engines.compilers.grounder import (
+    Grounder,
+    ground_minimize_action_costs_metric,
+)
 from unified_planning.engines.engine import Engine
 from unified_planning.engines import Credits
 from unified_planning.engines.mixins.compiler import CompilationKind
 from unified_planning.engines.mixins.compiler import CompilerMixin
 from unified_planning.engines.results import CompilerResult
 from unified_planning.exceptions import UPUnsupportedProblemTypeError
+from up_fast_downward import utils
 
 
 credits = Credits(
@@ -134,7 +140,7 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
                 schematic_up_action = writer.get_item_named(action.name)
                 params = (
                     writer.get_item_named(p)
-                    for p in atom.args[:action.num_external_parameters]
+                    for p in atom.args[: action.num_external_parameters]
                 )
                 up_params = tuple(exp_manager.ObjectExp(p) for p in params)
                 grounding_action_map[schematic_up_action].append(up_params)
@@ -145,9 +151,7 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         new_problem = up_res.problem
         new_problem.name = f"{self.name}_{problem.name}"
 
-        return CompilerResult(
-            new_problem, up_res.map_back_action_instance, self.name
-        )
+        return CompilerResult(new_problem, up_res.map_back_action_instance, self.name)
 
     def destroy(self):
         pass
@@ -254,15 +258,25 @@ class FastDownwardGrounder(Engine, CompilerMixin):
                 "up.model.Variable",
             ],
         ],
+        used_action_names: Set[str],
     ) -> InstantaneousAction:
         def fnode(fact):
             return self._get_fnode(fact, problem, get_item_named)
+
         exp_manager = problem.environment.expression_manager
 
         name_and_args = fd_action.name[1:-1].split()
         name = get_item_named(name_and_args[0]).name
         name_and_args[0] = name
-        action = InstantaneousAction("_".join(name_and_args))
+        full_name = "_".join(name_and_args)
+        if full_name in used_action_names:
+            for num in count():
+                candidate = f"{full_name}_{num}"
+                if candidate not in used_action_names:
+                    full_name = candidate
+                    break
+        used_action_names.add(full_name)
+        action = InstantaneousAction(full_name)
         for fact in fd_action.precondition:
             action.add_precondition(fnode(fact))
         for cond, fact in fd_action.add_effects:
@@ -272,6 +286,37 @@ class FastDownwardGrounder(Engine, CompilerMixin):
             c = exp_manager.And(fnode(f) for f in cond)
             action.add_effect(fnode(fact), False, c)
         return action
+
+    def _add_goal_action_for_complicated_goal(
+        self, problem: "up.model.AbstractProblem"
+    ) -> bool:
+        COMPLICATED_KINDS = (
+            OperatorKind.OR,
+            OperatorKind.IMPLIES,
+            OperatorKind.IFF,
+            OperatorKind.EXISTS,
+            OperatorKind.FORALL,
+        )
+
+        def is_complicated_goal(fnode):
+            if fnode.node_type in COMPLICATED_KINDS:
+                return True
+            if fnode.node_type == OperatorKind.NOT:
+                assert len(fnode.args) == 1
+                if fnode.args[0].node_type != OperatorKind.FLUENT_EXP:
+                    return True
+            return any(is_complicated_goal(arg) for arg in fnode.args)
+
+        def has_complicated_goal(problem):
+            return any(is_complicated_goal(g) for g in problem.goals)
+
+        if not has_complicated_goal(problem):
+            return problem, None, None
+        else:
+            # To avoid the introduction of axioms with complicated goals, we
+            # introduce a separate goal action (later to be removed by
+            # map_back)
+            return utils.introduce_artificial_goal_action(problem, True)
 
     def _compile(
         self, problem: "up.model.AbstractProblem", compilation_kind: "CompilationKind"
@@ -287,6 +332,11 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         :return: The resulting `CompilerResult` data structure.
         """
         assert isinstance(problem, Problem)
+        (
+            problem,
+            artificial_goal_action,
+            modified_to_orig_action,
+        ) = self._add_goal_action_for_complicated_goal(problem)
 
         writer = up.io.PDDLWriter(problem)
         pddl_problem = writer.get_problem().split("\n")
@@ -323,15 +373,23 @@ class FastDownwardGrounder(Engine, CompilerMixin):
 
         trace_back_map = dict()
 
-        exp_manager = problem.environment.expression_manager
+        used_action_names = set()
 
+        exp_manager = problem.environment.expression_manager
         for a in actions:
-            inst_action = self._transform_action(a, new_problem, writer.get_item_named)
+            inst_action = self._transform_action(
+                a, new_problem, writer.get_item_named, used_action_names
+            )
             name_and_args = a.name[1:-1].split()
-            schematic_up_action = writer.get_item_named(name_and_args[0])
-            params = (writer.get_item_named(p) for p in name_and_args[1:])
-            up_params = tuple(exp_manager.ObjectExp(p) for p in params)
-            trace_back_map[inst_action] = (schematic_up_action, up_params)
+            schematic_up_act = writer.get_item_named(name_and_args[0])
+            if schematic_up_act == artificial_goal_action:
+                trace_back_map[inst_action] = None
+            else:
+                if modified_to_orig_action is not None:
+                    schematic_up_act = modified_to_orig_action[schematic_up_act]
+                params = (writer.get_item_named(p) for p in name_and_args[1:])
+                up_params = tuple(exp_manager.ObjectExp(p) for p in params)
+                trace_back_map[inst_action] = (schematic_up_act, up_params)
             new_problem.add_action(inst_action)
 
         for g in goals:
@@ -347,9 +405,16 @@ class FastDownwardGrounder(Engine, CompilerMixin):
             else:
                 new_problem.add_quality_metric(qm)
 
+        mbai = lambda x: (
+            None
+            if trace_back_map[x.action] is None
+            else partial(lift_action_instance, map=trace_back_map)(x)
+        )
+
         return CompilerResult(
             new_problem,
-            partial(lift_action_instance, map=trace_back_map),
+            mbai,
+            #            partial(lift_action_instance, map=trace_back_map),
             self.name,
         )
 
