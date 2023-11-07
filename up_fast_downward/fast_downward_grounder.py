@@ -110,6 +110,9 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         pddl_problem = writer.get_problem().split("\n")
         pddl_domain = writer.get_domain().split("\n")
 
+
+        # perform Fast Downward translation until (and including)
+        # the reachability analysis
         orig_path = list(sys.path)
         orig_stdout = sys.stdout
         sys.stdout = StringIO()
@@ -132,6 +135,14 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         prog = prolog_program(task)
         model = compute_model(prog)
         sys.stdout = orig_stdout
+        sys.path = orig_path
+
+
+        # The model contains an overapproximation of the reachable components
+        # of the task, in particular also of the reachable ground actions.
+        # We retreive the parameters from these actions and hand them over to
+        # the Grounder from the UP, which performs the instantiation on the
+        # side of the UP.
         grounding_action_map = defaultdict(list)
         exp_manager = problem.environment.expression_manager
         for atom in model:
@@ -144,7 +155,6 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
                 )
                 up_params = tuple(exp_manager.ObjectExp(p) for p in params)
                 grounding_action_map[schematic_up_action].append(up_params)
-        sys.path = orig_path
 
         up_grounder = Grounder(grounding_actions_map=grounding_action_map)
         up_res = up_grounder.compile(problem, compilation_kind)
@@ -152,9 +162,6 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         new_problem.name = f"{self.name}_{problem.name}"
 
         return CompilerResult(new_problem, up_res.map_back_action_instance, self.name)
-
-    def destroy(self):
-        pass
 
 
 class FastDownwardGrounder(Engine, CompilerMixin):
