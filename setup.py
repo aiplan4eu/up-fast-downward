@@ -90,6 +90,7 @@ setup(name='up_fast_downward',
       package_data={
           "": ['fast_downward.py',
               'fast_downward_grounder.py',
+              'utils.py',
               'downward/fast-downward.py',
               'downward/README.md', 'downward/LICENSE.md',
               'downward/builds/release/bin/*',

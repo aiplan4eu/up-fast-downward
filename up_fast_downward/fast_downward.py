@@ -1,4 +1,3 @@
-from itertools import count
 import pkg_resources
 import sys
 import unified_planning as up
@@ -10,6 +9,7 @@ from unified_planning.engines import PDDLAnytimePlanner, PDDLPlanner
 from unified_planning.engines import OperationMode, Credits
 from unified_planning.shortcuts import BoolType, MinimizeActionCosts
 from unified_planning.engines.results import LogLevel, LogMessage, PlanGenerationResult
+from up_fast_downward import utils
 
 credits = {
     "name": "Fast Downward",
@@ -277,39 +277,11 @@ class FastDownwardOptimalPDDLPlanner(FastDownwardMixin, PDDLPlanner):
         timeout: Optional[float] = None,
         output_stream: Optional[Union[Tuple[IO[str], IO[str]], IO[str]]] = None,
     ) -> "up.engines.results.PlanGenerationResult":
-        def get_new_name(problem, prefix):
-            for num in count():
-                candidate = f"{prefix}{num}"
-                if not problem.has_name(candidate):
-                    return candidate
-
         assert isinstance(problem, up.model.Problem)
 
-        modified_problem = problem.clone()
         # add a new goal atom (initially false) plus an action that has the
         # original goal as precondition and sets the new goal atom
-        goal_fluent_name = get_new_name(modified_problem, "goal")
-        goal_fluent = modified_problem.add_fluent(
-            goal_fluent_name, BoolType(), default_initial_value=False
-        )
-        goal_action_name = get_new_name(modified_problem, "reach_goal")
-        goal_action = InstantaneousAction(goal_action_name)
-        for goal in modified_problem.goals:
-            goal_action.add_precondition(goal)
-        goal_action.add_effect(goal_fluent, True)
-        modified_problem.add_action(goal_action)
-        modified_problem.clear_goals()
-        modified_problem.add_goal(goal_fluent)
-        if modified_problem.quality_metrics and isinstance(
-            modified_problem.quality_metrics[0], MinimizeActionCosts
-        ):
-            m = modified_problem.quality_metrics[0]
-            action_costs = m.costs
-            action_costs[goal_action] = 1
-            metric = MinimizeActionCosts(action_costs, m.default, m.environment)
-            modified_problem.clear_quality_metrics()
-            modified_problem.add_quality_metric(metric)
-
+        modified_problem, _, _ = utils.introduce_artificial_goal_action(problem)
         return super()._solve(modified_problem, heuristic, timeout, output_stream)
 
     # overwrite plan extraction to remove the newly introduced goal action from
