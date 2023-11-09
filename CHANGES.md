@@ -1,4 +1,16 @@
 # Release notes
+UP Fast Downward 0.3.3
+- fix bug in fast-downward-reachability grounder (number of parameters)
+- Transform task to avoid axioms for goals in Grounder and optimal solver:
+  If the goal is not a conjunction of literals, Fast Downward introduces
+  axioms to handle it. To avoid this, we instead introduce an artificial
+  goal action (removed from plans or when mapping back in grounders).
+- With fast-downward-grounder, there can be several ground representatives of
+  the artificial goal action in the compiled task (e.g. from disjunctive
+  preconditions).  We now give each of them an individual name.
+- silence output in grounders
+- support result status MEMOUT, TIMEOUT and UNSUPPORTED_PROBLEM in solvers
+
 UP Fast Downward 0.3.2
 - support UP problem kind version 2
 

@@ -2,12 +2,14 @@ import pkg_resources
 import sys
 import unified_planning as up
 from typing import Callable, Iterator, IO, List, Optional, Tuple, Union
-from unified_planning.model import ProblemKind
+from unified_planning.model import ProblemKind, InstantaneousAction
 from unified_planning.engines import OptimalityGuarantee
 from unified_planning.engines import PlanGenerationResultStatus as ResultStatus
 from unified_planning.engines import PDDLAnytimePlanner, PDDLPlanner
 from unified_planning.engines import OperationMode, Credits
+from unified_planning.shortcuts import BoolType, MinimizeActionCosts
 from unified_planning.engines.results import LogLevel, LogMessage, PlanGenerationResult
+from up_fast_downward import utils
 
 credits = {
     "name": "Fast Downward",
@@ -112,6 +114,12 @@ class FastDownwardMixin:
             return ResultStatus.UNSOLVABLE_PROVEN
         if retval == 12:
             return ResultStatus.UNSOLVABLE_INCOMPLETELY
+        if retval == 34:
+            return ResultStatus.UNSUPPORTED_PROBLEM
+        if retval in (21, 23):
+            return ResultStatus.TIMEOUT
+        if retval in (20, 22):
+            return ResultStatus.MEMOUT
         else:
             return ResultStatus.INTERNAL_ERROR
 
@@ -259,3 +267,59 @@ class FastDownwardOptimalPDDLPlanner(FastDownwardMixin, PDDLPlanner):
     @staticmethod
     def satisfies(optimality_guarantee: OptimalityGuarantee) -> bool:
         return True
+
+    # To avoid the introduction of axioms with complicated goals, we introduce
+    # a separate goal action (later to be removed from the plan)
+    def _solve(
+        self,
+        problem: "up.model.AbstractProblem",
+        heuristic: Optional[Callable[["up.model.state.State"], Optional[float]]] = None,
+        timeout: Optional[float] = None,
+        output_stream: Optional[Union[Tuple[IO[str], IO[str]], IO[str]]] = None,
+    ) -> "up.engines.results.PlanGenerationResult":
+        assert isinstance(problem, up.model.Problem)
+
+        # add a new goal atom (initially false) plus an action that has the
+        # original goal as precondition and sets the new goal atom
+        modified_problem, _, _ = utils.introduce_artificial_goal_action(problem)
+        return super()._solve(modified_problem, heuristic, timeout, output_stream)
+
+    # overwrite plan extraction to remove the newly introduced goal action from
+    # the end of the plan
+    def _plan_from_file(
+        self,
+        problem: "up.model.Problem",
+        plan_filename: str,
+        get_item_named: Callable[
+            [str],
+            Union[
+                "up.model.Type",
+                "up.model.Action",
+                "up.model.Fluent",
+                "up.model.Object",
+                "up.model.Parameter",
+                "up.model.Variable",
+                "up.model.multi_agent.Agent",
+            ],
+        ],
+    ) -> "up.plans.Plan":
+        """
+        Takes a problem, a filename and a map of renaming and returns the plan parsed from the file.
+        :param problem: The up.model.problem.Problem instance for which the plan is generated.
+        :param plan_filename: The path of the file in which the plan is written.
+        :param get_item_named: A function that takes a name and returns the original up.model element instance
+            linked to that renaming.
+        :return: The up.plans.Plan corresponding to the parsed plan from the file
+        """
+        with open(plan_filename) as plan:
+            plan_string = plan.read()
+            # Remove all comments from the plan string.
+            plan_string = [
+                line
+                for line in plan_string.split("\n")
+                if not line.strip().startswith(";")
+            ]
+            # Remove the last line (= goal action) from the plan string.
+            plan_string = plan_string[:-2]
+            plan_string = "\n".join(plan_string)
+            return self._plan_from_str(problem, plan_string, get_item_named)
