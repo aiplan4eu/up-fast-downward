@@ -74,7 +74,7 @@ class install_fast_downward_develop(develop):
 long_description = "This package makes the [Fast Downward](https://www.fast-downward.org/) planning system available in the [unified_planning library](https://github.com/aiplan4eu/unified-planning) by the [AIPlan4EU project](https://www.aiplan4eu-project.eu/)."
 
 setup(name='up_fast_downward',
-      version='0.4.0',
+      version='0.4.1',
       description='Unified Planning Integration of the Fast Downward planning system',
       long_description=long_description,
       long_description_content_type="text/markdown",
