@@ -1,5 +1,9 @@
 # Release notes
-UP Fast Downward 0.3.3
+UP Fast Downward 0.4.1
+- Generate Python wheels compatible with Mac Apple Silicon M1/M2
+- Update README.md (current state of development and default configurations)
+
+UP Fast Downward 0.4.0
 - fix bug in fast-downward-reachability grounder (number of parameters)
 - Transform task to avoid axioms for goals in Grounder and optimal solver:
   If the goal is not a conjunction of literals, Fast Downward introduces

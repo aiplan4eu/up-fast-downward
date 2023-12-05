@@ -86,8 +86,7 @@ Details on the reachability analysis and the normalization can be found in Malte
 ## Current state of the system and ongoing development
 
 - Default configuration
-    - ```fast-downward``` engine: lama-first (flexible configuration under development)
+    - ```fast-downward``` engine: lama-first for One-Shot planning, seq-sat-lama-2011 for Anytime planning
     - ```fast-downward-opt``` engine: A* search with LMCut heuristic
 - Planning approaches of UP supported: Classical planning
-- Operative modes of UP currently supported: One-shot planning, Grounding
-- Operative modes of UP under development: Anytime planning
+- Operative modes of UP currently supported: One-shot planning, Anytime planning, Grounding
