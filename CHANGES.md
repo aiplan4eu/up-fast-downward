@@ -1,4 +1,7 @@
 # Release notes
+UP Fast Downward 0.5.0
+- use Fast Downward 24.06
+
 UP Fast Downward 0.4.1
 - Generate Python wheels compatible with Mac Apple Silicon M1/M2
 - Update README.md (current state of development and default configurations)
