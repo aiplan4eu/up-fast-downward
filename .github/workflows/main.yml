@@ -22,7 +22,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22.0
         env:
-          CIBW_SKIP: *-musllinux_*
+          CIBW_SKIP: '*-musllinux_*'
 
       - uses: actions/upload-artifact@v4
         with:
@@ -72,8 +72,8 @@ jobs:
 #
 #      - name: Build 64-bit wheel
 #        run: python -m cibuildwheel --output-dir dist
-##        env:
-##          CIBW_BUILD: cp36-win_amd64
+#        env:
+#          CIBW_BUILD: cp36-win_amd64
 #
 #      - uses: actions/upload-artifact@master
 #        with:
