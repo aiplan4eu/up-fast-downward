@@ -144,7 +144,8 @@ jobs:
 
   run-tox-test-windows:
     name: Test wheels
-    needs: [build-windows]
+    needs: [build-wheels]
+      #needs: [build-windows]
     runs-on: ${{ matrix.version.os }}
     strategy:
       matrix:
