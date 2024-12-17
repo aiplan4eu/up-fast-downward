@@ -1,0 +1,46 @@
+[project]
+name = "up_fast_downward"
+version = "0.4.2"
+description = "Unified Planning Integration of the Fast Downward planning system"
+readme = {text = "This package makes the [Fast Downward](https://www.fast-downward.org/) planning system available in the [unified_planning library](https://github.com/aiplan4eu/unified-planning).", content-type = "text/markdown"}
+requires-python = ">=3.8"
+license = {text = "GPL-3.0-only"}
+authors = [
+    {name = "UNIBAS Team"},
+]
+maintainers = [
+    {name = "Gabriele Röger", email = "gabriele.roeger@unibas.ch"},
+]
+dependencies = ["setuptools>=75.3.0"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.urls]
+Homepage = "https://github.com/aiplan4eu/up-fast-downward/"
+
+[tool.setuptools]
+py-modules = ["_custom_build"]
+
+[tool.setuptools.cmdclass]
+build_py = "_custom_build.install_fast_downward"
+bdist_wheel = "_custom_build.bdist_wheel"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+    "" = ['fast_downward.py',
+        'fast_downward_grounder.py',
+        'utils.py',
+        'downward/fast-downward.py',
+        'downward/README.md', 'downward/LICENSE.md',
+        'downward/builds/release/bin/*',
+        'downward/builds/release/bin/translate/*',
+        'downward/builds/release/bin/translate/pddl/*',
+        'downward/builds/release/bin/translate/pddl_parser/*',
+        'downward/driver/*', 'downward/driver/portfolios/*']
