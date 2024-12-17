@@ -46,7 +46,7 @@ jobs:
         env:
           CIBW_BUILD: cp36-win_amd64
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@master
         with:
           name: windows-wheel
           path: dist/*.whl
@@ -68,7 +68,7 @@ jobs:
         env:
           CIBW_ARCHS_MACOS: "x86_64 arm64" 
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@master
         with:
           name: mac-wheel
           path: dist/*.whl
