@@ -30,7 +30,7 @@ build_py = "_custom_build.install_fast_downward"
 bdist_wheel = "_custom_build.bdist_wheel"
 
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=59.6"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]
