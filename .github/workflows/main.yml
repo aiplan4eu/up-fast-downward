@@ -8,8 +8,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # macos-13 is an intel runner, macos-14 is apple silicon
-        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
+        # macos-13 is an intel runner
+        os: [ubuntu-latest, windows-latest, macos-13]
 
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          name: cibw-wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
 
 #  build-linux:
@@ -109,8 +109,7 @@ jobs:
     strategy:
       matrix:
         version:
-          - {os: ubuntu-20.04, python: '3.8'}
-          - {os: ubuntu-22.04, python: '3.10'}
+          - {os: ubuntu-latest, python: '3.10'}
           - {os: macOS-13, python: '3.10'}
     steps:
       - name: Clone repository
@@ -118,12 +117,12 @@ jobs:
 
       - uses: actions/download-artifact@master
         with:
-          name: linux-wheel
+          name: cibw-wheels-ubuntu-latest
           path: dist
 
       - uses: actions/download-artifact@master
         with:
-          name: mac-wheel
+          name: cibw-wheels-macos-13
           path: dist
 
       - name: Install Python
@@ -185,17 +184,17 @@ jobs:
     steps:
       - uses: actions/download-artifact@master
         with:
-          name: linux-wheel
+          name: cibw-wheels-ubuntu-latest
           path: dist
 
       - uses: actions/download-artifact@master
         with:
-          name: windows-wheel
+          name: cibw-wheels-windows-latest
           path: dist
 
       - uses: actions/download-artifact@master
         with:
-          name: mac-wheel
+          name: cibw-wheels-macos-13
           path: dist
 
       - run: ls dist
