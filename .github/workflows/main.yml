@@ -104,7 +104,7 @@ jobs:
   run-tox-test:
     name: Test wheels
       #needs: [build-linux, build-mac]
-    needs: [build-wheels]
+    needs: [build_wheels]
     runs-on: ${{ matrix.version.os }}
     strategy:
       matrix:
@@ -144,7 +144,7 @@ jobs:
 
   run-tox-test-windows:
     name: Test wheels
-    needs: [build-wheels]
+    needs: [build_wheels]
       #needs: [build-windows]
     runs-on: ${{ matrix.version.os }}
     strategy:
