@@ -47,7 +47,7 @@ class FastDownwardMixin:
 
     def _base_cmd(self, plan_filename: str):
         loc = "downward/fast-downward.py"
-        downward_res = importlib.resources.files(__name__).joinpath(loc)
+        downward_res = importlib.resources.files("up_fast_downward").joinpath(loc)
         with importlib.resources.as_file(downward_res) as downward:
             # This will clean up any temporary files created for accessing
             # downward once we leave the with statement. Since the resource is
