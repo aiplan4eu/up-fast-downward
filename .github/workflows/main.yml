@@ -30,7 +30,7 @@ jobs:
 #          path: ./wheelhouse/*.whl
 
   
-  build_wheels-windows:
+  build_wheels_windows:
     name: Build wheels on ${{ matrix.os }}
     runs-on: windows-latest
     env:
