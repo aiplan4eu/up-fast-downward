@@ -31,8 +31,8 @@ jobs:
 
 
   build_wheels_mac_arm64:
-    name: Build wheels on macos-13-arm64 
-    runs-on: macos-13-arm64
+    name: Build wheels on macos-14-arm64 
+    runs-on: macos-14-arm64
 
     steps:
       - uses: actions/checkout@v4
@@ -49,7 +49,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-macos-13-arm64
+          name: cibw-wheels-macos-14-arm64
           path: ./wheelhouse/*.whl
  
 
@@ -90,7 +90,7 @@ jobs:
         version:
           - {os: ubuntu-latest, python: '3.10'}
           - {os: macOS-13, python: '3.10'}
-          - {os: macOS-13-arm64, python: '3.12'}
+          - {os: macOS-14-arm64, python: '3.12'}
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
