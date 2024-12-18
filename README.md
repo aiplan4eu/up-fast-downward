@@ -84,7 +84,9 @@ Details on the reachability analysis and the normalization can be found in Malte
 
 
 ## Current state of the system and ongoing development
-
+- Fast Downward version: 2024.06
+    - since up-fast-downward 0.5.0: 2024.06
+    - up-fast-downward 0.3.x, 0.4.x: 2023.06
 - Default configuration
     - ```fast-downward``` engine: lama-first for One-Shot planning, seq-sat-lama-2011 for Anytime planning
     - ```fast-downward-opt``` engine: A* search with LMCut heuristic

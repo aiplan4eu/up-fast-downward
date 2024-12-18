@@ -1,10 +1,16 @@
 # Release notes
+
+UP Fast Downward 0.5.0
+- use Fast Downward 24.06
+- replace internal usage of deprecated package pkg_resources
+- require Python >= 3.9
+
 UP Fast Downward 0.4.2
-- Update packaging (using pyproject.toml)
+- update packaging (using pyproject.toml)
 
 UP Fast Downward 0.4.1
-- Generate Python wheels compatible with Mac Apple Silicon M1/M2
-- Update README.md (current state of development and default configurations)
+- generate Python wheels compatible with Mac Apple Silicon M1/M2
+- update README.md (current state of development and default configurations)
 
 UP Fast Downward 0.4.0
 - fix bug in fast-downward-reachability grounder (number of parameters)

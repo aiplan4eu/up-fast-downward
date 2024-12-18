@@ -8,7 +8,7 @@ import sys
 
 def clone_and_compile_fast_downward():
     FAST_DOWNWARD_REPO = 'https://github.com/aibasel/downward.git'
-    FAST_DOWNWARD_RELEASE = 'release-23.06'
+    FAST_DOWNWARD_RELEASE = 'release-24.06'
     #FAST_DOWNWARD_RELEASE = None
     # CHANGESET is ignored if release is not None
     FAST_DOWNWARD_CHANGESET = 'bd3c63647a42c9a5f103402615ca991d23a88d55'
