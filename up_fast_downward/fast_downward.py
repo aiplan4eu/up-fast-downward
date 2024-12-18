@@ -1,4 +1,4 @@
-import pkg_resources
+import importlib.resources
 import sys
 import unified_planning as up
 from typing import Callable, Iterator, IO, List, Optional, Tuple, Union
@@ -46,15 +46,20 @@ class FastDownwardMixin:
         self._guarantee_metrics_task = ResultStatus.SOLVED_SATISFICING
 
     def _base_cmd(self, plan_filename: str):
-        downward = pkg_resources.resource_filename(
-            __name__, "downward/fast-downward.py"
-        )
-        assert sys.executable, "Path to interpreter could not be found"
-        cmd = [sys.executable, downward, "--plan-file", plan_filename]
-        if self._fd_search_time_limit is not None:
-            cmd += ["--search-time-limit", self._fd_search_time_limit]
-        cmd += ["--log-level", self._log_level]
-        return cmd
+        loc = "downward/fast-downward.py"
+        downward_res = importlib.resources.files(__name__).joinpath(loc)
+        with importlib.resources.as_file(downward_res) as downward:
+            # This will clean up any temporary files created for accessing
+            # downward once we leave the with statement. Since the resource is
+            # not packed into a zip file or anything, this should be save
+            # enough. Otherwise, we need to explore an atexit handler:
+            # cf https://importlib-resources.readthedocs.io/en/latest/migration.html
+            assert sys.executable, "Path to interpreter could not be found"
+            cmd = [sys.executable, downward, "--plan-file", plan_filename]
+            if self._fd_search_time_limit is not None:
+                cmd += ["--search-time-limit", self._fd_search_time_limit]
+            cmd += ["--log-level", self._log_level]
+            return cmd
 
     def _get_cmd(
         self, domain_filename: str, problem_filename: str, plan_filename: str
