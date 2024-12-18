@@ -23,6 +23,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.22.0
         env:
           CIBW_SKIP: '*-musllinux_*'
+          CIBW_ARCHS_MACOS: "x86_64 arm64"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -66,6 +67,7 @@ jobs:
         version:
           - {os: ubuntu-latest, python: '3.10'}
           - {os: macOS-13, python: '3.10'}
+          - {os: macOS-14, python: '3.12'}
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
