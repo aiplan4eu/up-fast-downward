@@ -3,31 +3,31 @@ name: Deploy
 on: push
 
 jobs:
-#  build_wheels_mac_ubuntu:
-#    name: Build wheels on ${{ matrix.os }}
-#    runs-on: ${{ matrix.os }}
-#    strategy:
-#      matrix:
-#        # macos-13 is an intel runner
-#        os: [ubuntu-latest, macos-13]
-#
-#    steps:
-#      - uses: actions/checkout@v4
-#      
-#      - uses: actions/setup-python@v5
-#      
-#      - name: Install build tools
-#        run: python -m pip install --upgrade pip  setuptools==75.3.0
-#
-#      - name: Build wheels
-#        uses: pypa/cibuildwheel@v2.22.0
-#        env:
-#          CIBW_SKIP: '*-musllinux_*'
-#
-#      - uses: actions/upload-artifact@v4
-#        with:
-#          name: cibw-wheels-${{ matrix.os }}
-#          path: ./wheelhouse/*.whl
+  build_wheels_mac_ubuntu:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # macos-13 is an intel runner
+        os: [ubuntu-latest, macos-13]
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+      
+      - name: Install build tools
+        run: python -m pip install --upgrade pip  setuptools==75.3.0
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.22.0
+        env:
+          CIBW_SKIP: '*-musllinux_*'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
 
   
   build_wheels_windows:
@@ -57,50 +57,48 @@ jobs:
           name: cibw-wheels-windows-latest
           path: ./wheelhouse/*.whl
 
-#  run-tox-test:
-#    name: Test wheels
-#      #needs: [build-linux, build-mac]
-#    needs: [build_wheels_mac_ubuntu]
-#    runs-on: ${{ matrix.version.os }}
-#    strategy:
-#      matrix:
-#        version:
-#          - {os: ubuntu-latest, python: '3.10'}
-#          - {os: macOS-13, python: '3.10'}
-#    steps:
-#      - name: Clone repository
-#        uses: actions/checkout@v4
-#
-#      - uses: actions/download-artifact@master
-#        with:
-#          name: cibw-wheels-ubuntu-latest
-#          path: dist
-#
-#      - uses: actions/download-artifact@master
-#        with:
-#          name: cibw-wheels-macos-13
-#          path: dist
-#
-#      - name: Install Python
-#        uses: actions/setup-python@v4
-#        with:
-#          python-version: ${{ matrix.version.python }}
-#
-#      - name: Install dependencies
-#        run: |
-#          pip3 install tox
-#
-#      - name: Run basic test 
-#        run: |
-#
-#          cd misc/
-#          PIP_FIND_LINKS='${{ github.workspace }}/dist' tox -e unified-planning
-#
+  run-tox-test:
+    name: Test wheels on mac and linux
+    needs: [build_wheels_mac_ubuntu]
+    runs-on: ${{ matrix.version.os }}
+    strategy:
+      matrix:
+        version:
+          - {os: ubuntu-latest, python: '3.10'}
+          - {os: macOS-13, python: '3.10'}
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@master
+        with:
+          name: cibw-wheels-ubuntu-latest
+          path: dist
+
+      - uses: actions/download-artifact@master
+        with:
+          name: cibw-wheels-macos-13
+          path: dist
+
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.version.python }}
+
+      - name: Install dependencies
+        run: |
+          pip3 install tox
+
+      - name: Run basic test 
+        run: |
+
+          cd misc/
+          PIP_FIND_LINKS='${{ github.workspace }}/dist' tox -e unified-planning
+
 
   run-tox-test-windows:
-    name: Test wheels
+    name: Test wheels on windows
     needs: [build_wheels_windows]
-      #needs: [build-windows]
     runs-on: ${{ matrix.version.os }}
     strategy:
       matrix:
@@ -132,31 +130,31 @@ jobs:
           $env:PIP_FIND_LINKS='${{ github.workspace }}\dist'; tox -e unified-planning
 
 
-#  deploy-pypi:
-#    runs-on: ubuntu-latest
-#    needs: [run-tox-test, run-tox-test-windows]
-#    if: github.ref == 'refs/heads/main' # We only deploy on master commits
-#
-#    steps:
-#      - uses: actions/download-artifact@master
-#        with:
-#          name: cibw-wheels-ubuntu-latest
-#          path: dist
-#
-#      - uses: actions/download-artifact@master
-#        with:
-#          name: cibw-wheels-windows-latest
-#          path: dist
-#
-#      - uses: actions/download-artifact@master
-#        with:
-#          name: cibw-wheels-macos-13
-#          path: dist
-#
-#      - run: ls dist
-#
-#      - name: Upload to PyPI
-#        uses: pypa/gh-action-pypi-publish@master
-#        with:
-#          user: __token__
-#          password: ${{ secrets.PYPI_API_TOKEN }}
+  deploy-pypi:
+    runs-on: ubuntu-latest
+    needs: [run-tox-test, run-tox-test-windows]
+    if: github.ref == 'refs/heads/main' # We only deploy on master commits
+
+    steps:
+      - uses: actions/download-artifact@master
+        with:
+          name: cibw-wheels-ubuntu-latest
+          path: dist
+
+      - uses: actions/download-artifact@master
+        with:
+          name: cibw-wheels-windows-latest
+          path: dist
+
+      - uses: actions/download-artifact@master
+        with:
+          name: cibw-wheels-macos-13
+          path: dist
+
+      - run: ls dist
+
+      - name: Upload to PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
