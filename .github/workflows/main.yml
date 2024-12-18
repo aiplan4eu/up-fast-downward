@@ -3,13 +3,39 @@ name: Deploy
 on: push
 
 jobs:
-  build_wheels:
+#  build_wheels_mac_ubuntu:
+#    name: Build wheels on ${{ matrix.os }}
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        # macos-13 is an intel runner
+#        os: [ubuntu-latest, macos-13]
+#
+#    steps:
+#      - uses: actions/checkout@v4
+#      
+#      - uses: actions/setup-python@v5
+#      
+#      - name: Install build tools
+#        run: python -m pip install --upgrade pip  setuptools==75.3.0
+#
+#      - name: Build wheels
+#        uses: pypa/cibuildwheel@v2.22.0
+#        env:
+#          CIBW_SKIP: '*-musllinux_*'
+#
+#      - uses: actions/upload-artifact@v4
+#        with:
+#          name: cibw-wheels-${{ matrix.os }}
+#          path: ./wheelhouse/*.whl
+
+  
+  build_wheels-windows:
     name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        # macos-13 is an intel runner
-        os: [ubuntu-latest, windows-latest, macos-13]
+    runs-on: windows-latest
+    env:
+      CC: cl
+      CXX: cl
 
     steps:
       - uses: actions/checkout@v4
@@ -19,6 +45,8 @@ jobs:
       - name: Install build tools
         run: python -m pip install --upgrade pip  setuptools==75.3.0
 
+      - uses: ilammy/msvc-dev-cmd@v1
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22.0
         env:
@@ -26,126 +54,52 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-${{ matrix.os }}
+          name: cibw-wheels-windows-latest
           path: ./wheelhouse/*.whl
 
-#  build-linux:
-#    name: Build linux Python wheels
-#    runs-on: ubuntu-latest
-#
+#  run-tox-test:
+#    name: Test wheels
+#      #needs: [build-linux, build-mac]
+#    needs: [build_wheels_mac_ubuntu]
+#    runs-on: ${{ matrix.version.os }}
+#    strategy:
+#      matrix:
+#        version:
+#          - {os: ubuntu-latest, python: '3.10'}
+#          - {os: macOS-13, python: '3.10'}
 #    steps:
-#      - name: Checkout
+#      - name: Clone repository
 #        uses: actions/checkout@v4
 #
-#      - uses: actions/setup-python@v5
-#
-#      - name: Install build tools
-#        run: python -m pip install --upgrade pip  cibuildwheel==2.22.0 setuptools==75.3.0
-#
-#      - name: Build wheels
-#        run: python -m cibuildwheel --output-dir wheelhouse
-#
-#      - uses: actions/upload-artifact@master
+#      - uses: actions/download-artifact@master
 #        with:
-#          name: linux-wheel
-#          path: ./wheelhouse/*.whl
+#          name: cibw-wheels-ubuntu-latest
+#          path: dist
 #
-#
-#  build-windows:
-#    name: Build windows Python wheel
-#    runs-on: windows-2022
-#    env:
-#      CC: cl
-#      CXX: cl
-##      CIBW_BUILD_VERBOSITY: 3
-#
-#    steps:
-#      - name: Clone UP Fast Downward repository
-#        uses: actions/checkout@v4
-#
-#      - uses: actions/setup-python@v3
-#
-#      - name: Install cibuildwheel
-#        run: python -m pip install cibuildwheel==2.22.0
-#
-#      - uses: ilammy/msvc-dev-cmd@v1
-#
-#      - name: Build 64-bit wheel
-#        run: python -m cibuildwheel --output-dir dist
-#        env:
-#          CIBW_BUILD: cp36-win_amd64
-#
-#      - uses: actions/upload-artifact@master
+#      - uses: actions/download-artifact@master
 #        with:
-#          name: windows-wheel
-#          path: dist/*.whl
+#          name: cibw-wheels-macos-13
+#          path: dist
 #
-#
-#  build-mac:
-#    name: Build macOS Python wheel
-#    runs-on: macOS-11
-#    steps:
-#      - uses: actions/checkout@v4
-#
-#      - uses: actions/setup-python@v3
-#
-#      - name: Install cibuildwheel
-#        run: python -m pip install cibuildwheel==2.22.0
-#
-#      - name: Build wheel
-#        run: python -m cibuildwheel --output-dir dist
-#        env:
-#          CIBW_ARCHS_MACOS: "x86_64 arm64" 
-#
-#      - uses: actions/upload-artifact@master
+#      - name: Install Python
+#        uses: actions/setup-python@v4
 #        with:
-#          name: mac-wheel
-#          path: dist/*.whl
-
-
-  run-tox-test:
-    name: Test wheels
-      #needs: [build-linux, build-mac]
-    needs: [build_wheels]
-    runs-on: ${{ matrix.version.os }}
-    strategy:
-      matrix:
-        version:
-          - {os: ubuntu-latest, python: '3.10'}
-          - {os: macOS-13, python: '3.10'}
-    steps:
-      - name: Clone repository
-        uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@master
-        with:
-          name: cibw-wheels-ubuntu-latest
-          path: dist
-
-      - uses: actions/download-artifact@master
-        with:
-          name: cibw-wheels-macos-13
-          path: dist
-
-      - name: Install Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.version.python }}
-
-      - name: Install dependencies
-        run: |
-          pip3 install tox
-
-      - name: Run basic test 
-        run: |
-
-          cd misc/
-          PIP_FIND_LINKS='${{ github.workspace }}/dist' tox -e unified-planning
-
+#          python-version: ${{ matrix.version.python }}
+#
+#      - name: Install dependencies
+#        run: |
+#          pip3 install tox
+#
+#      - name: Run basic test 
+#        run: |
+#
+#          cd misc/
+#          PIP_FIND_LINKS='${{ github.workspace }}/dist' tox -e unified-planning
+#
 
   run-tox-test-windows:
     name: Test wheels
-    needs: [build_wheels]
+    needs: [build_wheels_windows]
       #needs: [build-windows]
     runs-on: ${{ matrix.version.os }}
     strategy:
