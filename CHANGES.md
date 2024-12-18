@@ -1,4 +1,7 @@
 # Release notes
+UP Fast Downward 0.4.2
+- Update packaging (using pyproject.toml)
+
 UP Fast Downward 0.4.1
 - Generate Python wheels compatible with Mac Apple Silicon M1/M2
 - Update README.md (current state of development and default configurations)
