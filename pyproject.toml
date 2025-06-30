@@ -1,6 +1,6 @@
 [project]
 name = "up_fast_downward"
-version = "0.5.0"
+version = "0.5.1"
 description = "Unified Planning Integration of the Fast Downward planning system"
 readme = {text = "This package makes the [Fast Downward](https://www.fast-downward.org/) planning system available in the [unified_planning library](https://github.com/aiplan4eu/unified-planning).", content-type = "text/markdown"}
 requires-python = ">=3.9"
