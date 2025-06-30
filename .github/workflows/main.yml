@@ -171,6 +171,11 @@ jobs:
           name: cibw-wheels-macos-13
           path: dist
 
+      - uses: actions/download-artifact@master
+        with:
+          name: cibw-wheels-macos-14
+          path: dist
+
       - run: ls dist
 
       - name: Upload to PyPI
