@@ -1,5 +1,9 @@
 # Release notes
 
+UP Fast Downward 0.5.1
+- include mac arm64 build in PyPI upload (Michal Halenka)
+- update Github workflows
+
 UP Fast Downward 0.5.0
 - use Fast Downward 24.06
 - replace internal usage of deprecated package pkg_resources
