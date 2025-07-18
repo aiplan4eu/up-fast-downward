@@ -130,7 +130,7 @@ def test_valid_result_status():
     }
 
     with AnytimePlanner(name="fast-downward", params=params) as planner:
-        for result in planner.get_solutions(small_problem): # you can try it on "problem" here
+        for result in planner.get_solutions(small_problem, output_stream=sys.stdout): # you can try it on "problem" here
             if result.status == up.engines.PlanGenerationResultStatus.INTERMEDIATE:
                 print("Found an intermediate plan of length:", len(result.plan.actions))
                 print("Continue searching...")
