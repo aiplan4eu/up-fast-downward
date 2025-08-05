@@ -26,7 +26,7 @@ def clone_and_compile_fast_downward():
         subprocess.run(['git', 'checkout', FAST_DOWNWARD_CHANGESET])
     print("Building Fast Downward (this can take some time)...")
     build = subprocess.run(['python', 'build.py', 'release'],
-                           stdout = subprocess.PIPE, stderr = subprocess.PIPE,
+#                           stdout = subprocess.PIPE, stderr = subprocess.PIPE,
                            universal_newlines = True)
     os.chdir(curr_dir)
 
