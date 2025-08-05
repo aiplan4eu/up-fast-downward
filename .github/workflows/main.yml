@@ -24,6 +24,7 @@ jobs:
         env:
           CIBW_SKIP: '*-musllinux_*'
           CIBW_ENABLE: pypy
+          MACOSX_DEPLOYMENT_TARGET: "11"
 
       - uses: actions/upload-artifact@v4
         with:
