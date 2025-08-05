@@ -116,23 +116,21 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         orig_stdout = sys.stdout
         sys.stdout = StringIO()
         path = os.path.join(
-            os.path.dirname(__file__), "downward/builds/release/bin/translate"
+            os.path.dirname(__file__), "downward/builds/release/bin/"
         )
         sys.path.insert(1, path)
-        import pddl_parser as fast_downward_pddl_parser
-        import normalize as fast_downward_normalize
-        from pddl_to_prolog import translate as prolog_program
-        from build_model import compute_model
-        import pddl
+        import translate
+        from translate.normalize import normalize as fd_normalize
+        from translate.build_model import compute_model as prolog_model
+        from translate.pddl_to_prolog import translate as create_prolog_program
+        from translate.pddl_parser import lisp_parser, parsing_functions
 
-        lisp_parser = fast_downward_pddl_parser.lisp_parser
         fd_domain = lisp_parser.parse_nested_list(pddl_domain)
         fd_problem = lisp_parser.parse_nested_list(pddl_problem)
-        parse = fast_downward_pddl_parser.parsing_functions.parse_task
-        task = parse(fd_domain, fd_problem)
-        fast_downward_normalize.normalize(task)
-        prog = prolog_program(task)
-        model = compute_model(prog)
+        task = parsing_functions.parse_task(fd_domain, fd_problem)
+        fd_normalize(task)
+        prog = create_prolog_program(task)
+        model = prolog_model(prog)
         sys.stdout = orig_stdout
         sys.path = orig_path
 
@@ -144,7 +142,7 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         grounding_action_map = defaultdict(list)
         exp_manager = problem.environment.expression_manager
         for atom in model:
-            if isinstance(atom.predicate, pddl.Action):
+            if isinstance(atom.predicate, translate.pddl.Action):
                 action = atom.predicate
                 schematic_up_action = writer.get_item_named(action.name)
                 params = (
@@ -346,21 +344,20 @@ class FastDownwardGrounder(Engine, CompilerMixin):
         orig_stdout = sys.stdout
         sys.stdout = StringIO()
         path = os.path.join(
-            os.path.dirname(__file__), "downward/builds/release/bin/translate"
+            os.path.dirname(__file__), "downward/builds/release/bin"
         )
         sys.path.insert(1, path)
-        import pddl_parser as fast_downward_pddl_parser
-        import instantiate as fd_instantiate
-        import normalize as fast_downward_normalize
+        import translate
+        import translate.instantiate
+        from translate.normalize import normalize as fd_normalize
+        from translate.pddl_parser import lisp_parser, parsing_functions
 
-        lisp_parser = fast_downward_pddl_parser.lisp_parser
         fd_domain = lisp_parser.parse_nested_list(pddl_domain)
         fd_problem = lisp_parser.parse_nested_list(pddl_problem)
-        parse = fast_downward_pddl_parser.parsing_functions.parse_task
-        task = parse(fd_domain, fd_problem)
-        fast_downward_normalize.normalize(task)
+        task = parsing_functions.parse_task(fd_domain, fd_problem)
+        fd_normalize(task)
 
-        _, _, actions, goals, axioms, _ = fd_instantiate.explore(task)
+        _, _, actions, goals, axioms, _ = translate.instantiate.explore(task)
         sys.stdout = orig_stdout
         sys.path = orig_path
         return actions, goals, axioms
