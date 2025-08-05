@@ -1,5 +1,9 @@
 # Release notes
 
+UP Fast Downward 0.5.2
+- use latest Fast Downward (24.06.1+, ba6ffb7...)
+- adapt grounders to changes in Fast Downward
+
 UP Fast Downward 0.5.1
 - include mac arm64 build in PyPI upload (Michal Halenka)
 - update Github workflows
