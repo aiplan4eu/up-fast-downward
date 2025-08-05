@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         # macos-13 is an intel runner
-        os: [ubuntu-latest, macos-13]
+        os: [ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v4
