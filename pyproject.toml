@@ -4,7 +4,7 @@ version = "0.5.2"
 description = "Unified Planning Integration of the Fast Downward planning system"
 readme = {text = "This package makes the [Fast Downward](https://www.fast-downward.org/) planning system available in the [unified_planning library](https://github.com/aiplan4eu/unified-planning).", content-type = "text/markdown"}
 requires-python = ">=3.9"
-license = {text = "GPL-3.0-only"}
+license = "GPL-3.0-only"
 authors = [
     {name = "UNIBAS Team"},
 ]
@@ -14,7 +14,6 @@ maintainers = [
 dependencies = ["setuptools>=59.6.0"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
@@ -49,6 +48,6 @@ build_py = "up_fast_downward._custom_build.install_fast_downward"
 bdist_wheel = "up_fast_downward._custom_build.bdist_wheel"
 
 [build-system]
-requires = ["setuptools>=59.6"]
+requires = ["setuptools>=70.1"]
 build-backend = "setuptools.build_meta"
 

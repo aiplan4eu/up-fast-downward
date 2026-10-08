@@ -14,20 +14,29 @@ def clone_and_compile_fast_downward():
     FAST_DOWNWARD_CHANGESET = 'ba6ffb79757da3590f8d9e844a5e940a3e94601e'
     
     curr_dir = os.getcwd()
+
+    # Remove leftovers of an earlier build.
+    shutil.rmtree('downward', ignore_errors=True)
+    shutil.rmtree('up_fast_downward/downward', ignore_errors=True)
+
     print("Cloning Fast Downward repository...")
     if FAST_DOWNWARD_RELEASE is not None:
-        subprocess.run(['git', 'clone', '-b', FAST_DOWNWARD_RELEASE, FAST_DOWNWARD_REPO])
+        subprocess.run(['git', 'clone', '-b', FAST_DOWNWARD_RELEASE, FAST_DOWNWARD_REPO],
+                       check=True)
     else:
-        subprocess.run(['git', 'clone', FAST_DOWNWARD_REPO])
+        subprocess.run(['git', 'clone', FAST_DOWNWARD_REPO], check=True)
 
     shutil.move('downward', 'up_fast_downward/downward')
     os.chdir('up_fast_downward/downward')
-    if FAST_DOWNWARD_RELEASE is None:
-        subprocess.run(['git', 'checkout', FAST_DOWNWARD_CHANGESET])
-    print("Building Fast Downward (this can take some time)...")
-    build = subprocess.run(['python', 'build.py', 'release'],
-                           universal_newlines = True)
-    os.chdir(curr_dir)
+    try:
+        if FAST_DOWNWARD_RELEASE is None:
+            subprocess.run(['git', 'checkout', FAST_DOWNWARD_CHANGESET],
+                           check=True)
+        print("Building Fast Downward (this can take some time)...")
+        subprocess.run(['python', 'build.py', 'release'],
+                       universal_newlines = True, check=True)
+    finally:
+        os.chdir(curr_dir)
 
 class install_fast_downward(_build_py):
     """Custom install command."""
