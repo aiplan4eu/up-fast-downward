@@ -37,9 +37,9 @@ up_fast_downward = [
     'downward/fast-downward.py',
     'downward/README.md', 'downward/LICENSE.md',
     'downward/builds/release/bin/*',
-    'downward/builds/release/bin/translate/*',
-    'downward/builds/release/bin/translate/pddl/*',
-    'downward/builds/release/bin/translate/pddl_parser/*',
+    'downward/builds/release/bin/fast_downward/translate/*',
+    'downward/builds/release/bin/fast_downward/translate/pddl/*',
+    'downward/builds/release/bin/fast_downward/translate/pddl_parser/*',
     'downward/driver/*', 'downward/driver/portfolios/*'
 ]
 
