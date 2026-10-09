@@ -1,9 +1,11 @@
 # Release notes
 
 UP Fast Downward 1.0.0
-- use latest Fast Downard (26.6)
+- use latest Fast Downward (26.6)
 - update PlanResultStatus to cover new Fast Downward exit code
 - use new fast-downward.translate package for grounding
+- update GitHub workflows
+- extend tox tests
 
 UP Fast Downward 0.5.2
 - use latest Fast Downward (24.06.1+, ba6ffb7...)
@@ -11,7 +13,7 @@ UP Fast Downward 0.5.2
 
 UP Fast Downward 0.5.1
 - include mac arm64 build in PyPI upload (Michal Halenka)
-- update Github workflows
+- update GitHub workflows
 
 UP Fast Downward 0.5.0
 - use Fast Downward 24.06
@@ -53,7 +55,7 @@ UP Fast Downward 0.2.3
 UP Fast Downward 0.2.2
 - exploit better support for anytime planners in the up: this is not
   a functional change but most of the necessary functionality is now provided
-  by the up library, so we du not have to duplicate it in the engine
+  by the up library, so we do not have to duplicate it in the engine
   integration.
 
 UP Fast Downward 0.2.1
@@ -99,7 +101,7 @@ UP Fast Downward 0.0.6
 - support new plan result semantics of unified planning library
 
 UP Fast Downward 0.0.5
-- declare support for hierachical typing
+- declare support for hierarchical typing
 - build wheels for Mac and Windows with cibuildwheel
 
 UP Fast Downward 0.0.4
