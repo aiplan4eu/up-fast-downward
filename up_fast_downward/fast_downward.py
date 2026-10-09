@@ -117,13 +117,13 @@ class FastDownwardMixin:
                 return solved(metrics)
         if retval in (10, 11):
             return ResultStatus.UNSOLVABLE_PROVEN
-        if retval == 12:
+        if retval in (12, 13):
             return ResultStatus.UNSOLVABLE_INCOMPLETELY
         if retval == 34:
             return ResultStatus.UNSUPPORTED_PROBLEM
         if retval in (21, 23):
             return ResultStatus.TIMEOUT
-        if retval in (20, 22):
+        if retval in (20, 22, 24):
             return ResultStatus.MEMOUT
         else:
             return ResultStatus.INTERNAL_ERROR
