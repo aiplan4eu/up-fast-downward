@@ -6,6 +6,16 @@ import sys
 import unified_planning as up
 from functools import partial
 
+
+import fast_downward.translate as translate
+from fast_downward.translate.options import set_options
+from fast_downward.translate.instantiate import explore as fd_explore
+from fast_downward.translate.normalize import normalize as fd_normalize
+from fast_downward.translate.build_model import compute_model as prolog_model
+from fast_downward.translate.pddl_to_prolog import translate as create_prolog_program
+from fast_downward.translate.pddl_parser import lisp_parser, parsing_functions
+
+
 from typing import Callable, Mapping, Optional, Union, Set, Tuple
 from unified_planning.model import FNode, Problem, ProblemKind, MinimizeActionCosts
 from unified_planning.model.walkers import Simplifier
@@ -112,19 +122,10 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
 
         # perform Fast Downward translation until (and including)
         # the reachability analysis
-        orig_path = list(sys.path)
         orig_stdout = sys.stdout
         sys.stdout = StringIO()
-        path = os.path.join(
-            os.path.dirname(__file__), "downward/builds/release/bin/"
-        )
-        sys.path.insert(1, path)
-        import translate
-        from translate.normalize import normalize as fd_normalize
-        from translate.build_model import compute_model as prolog_model
-        from translate.pddl_to_prolog import translate as create_prolog_program
-        from translate.pddl_parser import lisp_parser, parsing_functions
 
+        set_options(["domain.pddl", "problem.pddl"])
         fd_domain = lisp_parser.parse_nested_list(pddl_domain)
         fd_problem = lisp_parser.parse_nested_list(pddl_problem)
         task = parsing_functions.parse_task(fd_domain, fd_problem)
@@ -132,7 +133,6 @@ class FastDownwardReachabilityGrounder(Engine, CompilerMixin):
         prog = create_prolog_program(task)
         model = prolog_model(prog)
         sys.stdout = orig_stdout
-        sys.path = orig_path
 
         # The model contains an overapproximation of the reachable components
         # of the task, in particular also of the reachable ground actions.
@@ -340,26 +340,17 @@ class FastDownwardGrounder(Engine, CompilerMixin):
             return utils.introduce_artificial_goal_action(problem, True)
 
     def _instantiate_with_fast_downward(self, pddl_problem, pddl_domain):
-        orig_path = list(sys.path)
         orig_stdout = sys.stdout
         sys.stdout = StringIO()
-        path = os.path.join(
-            os.path.dirname(__file__), "downward/builds/release/bin"
-        )
-        sys.path.insert(1, path)
-        import translate
-        import translate.instantiate
-        from translate.normalize import normalize as fd_normalize
-        from translate.pddl_parser import lisp_parser, parsing_functions
 
+        set_options(["domain.pddl", "problem.pddl"])
         fd_domain = lisp_parser.parse_nested_list(pddl_domain)
         fd_problem = lisp_parser.parse_nested_list(pddl_problem)
         task = parsing_functions.parse_task(fd_domain, fd_problem)
         fd_normalize(task)
 
-        _, _, actions, goals, axioms, _ = translate.instantiate.explore(task)
+        _, _, actions, goals, axioms, _ = fd_explore(task)
         sys.stdout = orig_stdout
-        sys.path = orig_path
         return actions, goals, axioms
 
     def _compile(
