@@ -8,8 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # macos-13 is an intel runner
-        os: [ubuntu-latest, macos-13]
+        os: [ubuntu-latest, macos-15-intel]
 
     steps:
       - uses: actions/checkout@v7
@@ -92,8 +91,8 @@ jobs:
     strategy:
       matrix:
         version:
-          - {os: ubuntu-latest, python: '3.10'}
-          - {os: macos-13, python: '3.10'}
+          - {os: ubuntu-latest, python: '3.12'}
+          - {os: macos-15, python: '3.12'}
           - {os: macos-14, python: '3.12'}
     steps:
       - name: Clone repository
@@ -172,7 +171,7 @@ jobs:
 
       - uses: actions/download-artifact@master
         with:
-          name: cibw-wheels-macos-13
+          name: cibw-wheels-macos-15-intel
           path: dist
 
       - uses: actions/download-artifact@master
