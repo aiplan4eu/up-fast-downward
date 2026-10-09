@@ -83,8 +83,9 @@ Details on the reachability analysis and the normalization can be found in Malte
 **Note**: Do not ground the problem if you subsequently want to use it with a Fast Downward solver. Otherwise it will only repeat some work and some internal processing of Fast Downward (i.e. the invariant synthesis) will be slower than with the ungrounded problem.
 
 
-## Current state of the system and ongoing development
-- Fast Downward version: 24.06.1+
+## Current state of the system
+- Fast Downward version: 26.6
+    - since up-fast-downward 1.0.0: 26.6
     - since up-fast-downward 0.5.2: 24.06.1+ (ba6ffb79757da3590f8d9e844a5e940a3e94601e)
     - since up-fast-downward 0.5.0: 24.06
     - up-fast-downward 0.3.x, 0.4.x: 23.06

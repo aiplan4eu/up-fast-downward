@@ -1,5 +1,10 @@
 # Release notes
 
+UP Fast Downward 1.0.0
+- use latest Fast Downard (26.6)
+- update PlanResultStatus to cover new Fast Downward exit code
+- use new fast-downward.translate package for grounding
+
 UP Fast Downward 0.5.2
 - use latest Fast Downward (24.06.1+, ba6ffb7...)
 - adapt grounders to changes in Fast Downward
