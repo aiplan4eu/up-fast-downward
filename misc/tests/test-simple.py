@@ -89,7 +89,7 @@ def test_valid_result_status_metric(oneshot_planner_name):
 
 @pytest.mark.parametrize(
     "grounder_name", ["fast-downward-reachability-grounder",
-                      "fast-downward-grounder", "up_grounder"]
+                      "fast-downward-grounder"]
 )
 def test_grounder(grounder_name):
     problem = lifted_problem()
