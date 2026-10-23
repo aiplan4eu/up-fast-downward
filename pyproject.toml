@@ -34,6 +34,7 @@ up_fast_downward = [
     'fast_downward.py',
     'fast_downward_grounder.py',
     'utils.py',
+    'eval_server/eval_server.cc',
     'downward/fast-downward.py',
     'downward/README.md', 'downward/LICENSE.md',
     'downward/builds/release/bin/*',
