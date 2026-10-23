@@ -1,5 +1,11 @@
 # Release notes
 
+UP Fast Downward 1.1.0
+- add Fast Downward heuristics as engines of the Heuristic operation mode
+  (requires a unified_planning version with the Heuristic operation mode)
+- build Fast Downward with an additional eval_server search plugin and a
+  --task-file option, used by the heuristic engines
+
 UP Fast Downward 1.0.0
 - use latest Fast Downward (26.6)
 - update PlanResultStatus to cover new Fast Downward exit code

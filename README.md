@@ -82,6 +82,43 @@ Details on the reachability analysis and the normalization can be found in Malte
 
 **Note**: Do not ground the problem if you subsequently want to use it with a Fast Downward solver. Otherwise it will only repeat some work and some internal processing of Fast Downward (i.e. the invariant synthesis) will be slower than with the ungrounded problem.
 
+### Evaluating heuristics
+
+The integration adds the heuristics of Fast Downward as engines of the Heuristic operation mode. Each engine translates the problem once and keeps a Fast Downward process that evaluates the states passed to `value`:
+
+```
+from unified_planning.shortcuts import *
+
+with SequentialSimulator(problem) as simulator, Heuristic(problem, name="fast-downward-lmcut") as h:
+    print(h.value(simulator.get_initial_state()))  # None if a dead end is detected
+```
+
+| engine | Fast Downward evaluator | guarantees | conditional effects | axioms |
+|---|---|---|---|---|
+| `fast-downward-blind` | `blind()` | admissible, consistent, goal-aware, safe | yes | yes |
+| `fast-downward-goalcount` | `goalcount()` | goal-aware, safe | yes | yes |
+| `fast-downward-hmax` | `hmax()` | admissible, consistent, goal-aware, safe | yes | no |
+| `fast-downward-add` | `add()` | goal-aware, safe | yes | yes |
+| `fast-downward-ff` | `ff()` | goal-aware, safe | yes | yes |
+| `fast-downward-cg` | `cg()` | goal-aware | yes | yes |
+| `fast-downward-cea` | `cea()` | goal-aware | yes | yes |
+| `fast-downward-lmcut` | `lmcut()` | admissible, goal-aware, safe | no | no |
+| `fast-downward-hm` | `hm(m=2)` | admissible, consistent, goal-aware, safe | no | no |
+| `fast-downward-ipdb` | `ipdb()` | admissible, consistent, goal-aware, safe | no | no |
+| `fast-downward-cpdbs` | `cpdbs()` | admissible, consistent, goal-aware, safe | no | no |
+| `fast-downward-zopdbs` | `zopdbs()` | admissible, consistent, goal-aware, safe | no | no |
+| `fast-downward-cegar` | `cegar()` | admissible, consistent, goal-aware, safe | no | no |
+| `fast-downward-merge_and_shrink` | bisimulation, SCC-DFP, `max_states=50k` | admissible, consistent, goal-aware, safe | yes | no |
+| `fast-downward-heuristic` | any, via the `fast_downward_heuristic` parameter | none | yes | yes |
+
+The guarantees are those documented by Fast Downward 26.6. Fast Downward introduces axioms for some problems, e.g. with universally quantified conditions or non-conjunctive goals; the engines that do not support them raise `UPUnsupportedProblemTypeError` for such problems. Values are measured in the action costs of the problem's metric, or in plan length if it has none.
+
+`fast-downward-heuristic` accepts any Fast Downward evaluator, e.g. `Heuristic(problem, name="fast-downward-heuristic", params={"fast_downward_heuristic": "max([hmax(), lmcut()])"})`. Heuristics that need an LP solver (`operatorcounting`, the potential heuristics) only work if Fast Downward was built with one, which the released wheels are not.
+
+**Note**: The values are computed on the task produced by the Fast Downward translator, which drops facts that are unreachable from the initial state. They are only meaningful for states that are reachable from the initial state of the problem.
+
+**Note**: The landmark heuristics (`landmark_sum`, `landmark_cost_partitioning`) depend on the path to a state, not only on the state, and are therefore rejected.
+
 
 ## Current state of the system
 - Fast Downward version: 26.6
@@ -93,4 +130,4 @@ Details on the reachability analysis and the normalization can be found in Malte
     - ```fast-downward``` engine: lama-first for One-Shot planning, seq-sat-lama-2011 for Anytime planning
     - ```fast-downward-opt``` engine: A* search with LMCut heuristic
 - Planning approaches of UP supported: Classical planning
-- Operative modes of UP currently supported: One-shot planning, Anytime planning, Grounding
+- Operative modes of UP currently supported: One-shot planning, Anytime planning, Grounding, Heuristic
