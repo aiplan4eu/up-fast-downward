@@ -15,7 +15,7 @@ import subprocess
 import sys
 import tempfile
 from collections import deque
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, suppress
 from io import StringIO
 from typing import List, NamedTuple, Optional, Tuple
 
@@ -97,12 +97,14 @@ class FastDownwardHeuristic(Engine, HeuristicMixin):
         assert isinstance(problem, up.model.Problem)
         self._process: Optional[subprocess.Popen] = None
         self._log: deque = deque(maxlen=20)
+        # Why the process was stopped, raised again by later calls to value.
+        self._error: Optional[str] = None
         self._variables: List[SASVariable] = []
         # Set when the translator decides the task, so no process is needed.
         self._trivial = False
         self._trivial_value: Optional[int] = None
 
-        writer = up.io.PDDLWriter(problem)
+        writer = up.io.PDDLWriter(problem, rewrite_bool_assignments=True)
         sas_task = self._translate(writer)
         self._check_supported(sas_task)
         if self._is_trivial(sas_task):
@@ -129,7 +131,14 @@ class FastDownwardHeuristic(Engine, HeuristicMixin):
     def supported_kind(cls) -> "ProblemKind":
         supported_kind = FastDownwardPDDLPlanner.supported_kind()
         if not cls.supports_conditional_effects:
-            supported_kind.unset_effects_kind("CONDITIONAL_EFFECTS")
+            # As for fast-downward-opt, since the other kinds can be written as conditional effects.
+            for kind in (
+                "CONDITIONAL_EFFECTS",
+                "FORALL_EFFECTS",
+                "FLUENTS_IN_BOOLEAN_ASSIGNMENTS",
+                "STATIC_FLUENTS_IN_BOOLEAN_ASSIGNMENTS",
+            ):
+                supported_kind.unset_effects_kind(kind)
         return supported_kind
 
     @classmethod
@@ -225,8 +234,13 @@ class FastDownwardHeuristic(Engine, HeuristicMixin):
                 stderr=subprocess.STDOUT,
                 text=True,
             )
-            reply = self._read_reply()
-            assert reply == READY_REPLY, reply
+            try:
+                reply = self._read_reply()
+                if reply != READY_REPLY:
+                    raise UPException(f"Unexpected reply from eval_server: {reply}")
+            except BaseException:
+                self._stop()
+                raise
         finally:
             # eval_server has read the task once it is ready, or it has exited.
             os.remove(task_file)
@@ -239,10 +253,22 @@ class FastDownwardHeuristic(Engine, HeuristicMixin):
                 return line[len(REPLY_PREFIX) :].strip()
             self._log.append(line)
         exit_code = self._process.wait()
-        self._process = None
-        raise UPException(
-            f"Fast Downward exited with code {exit_code}:\n" + "".join(self._log)
+        self._error = f"Fast Downward exited with code {exit_code}:\n" + "".join(
+            self._log
         )
+        raise UPException(self._error)
+
+    def _stop(self):
+        """Kills the process if it still runs and closes its pipes."""
+        if self._process is None:
+            return
+        self._process.kill()
+        self._process.wait()
+        # Closing stdin flushes it, which fails if the process is gone.
+        with suppress(OSError):
+            self._process.stdin.close()
+        self._process.stdout.close()
+        self._process = None
 
     def _sas_values(self, state: "up.model.State") -> List[int]:
         # ponytail: one get_value per translated atom, O(#atoms) per call; read
@@ -261,28 +287,31 @@ class FastDownwardHeuristic(Engine, HeuristicMixin):
         if self._trivial:
             return self._trivial_value
         if self._process is None:
-            raise UPException(f"{self.name} has been destroyed.")
+            raise UPException(self._error or f"{self.name} has been destroyed.")
         request = " ".join(map(str, self._sas_values(state)))
         try:
-            self._process.stdin.write(request + "\n")
-            self._process.stdin.flush()
-        except OSError:
-            pass  # the process has exited; _read_reply raises with its log
-        reply = self._read_reply()
+            try:
+                self._process.stdin.write(request + "\n")
+                self._process.stdin.flush()
+            except OSError:
+                pass  # the process has exited; _read_reply raises with its log
+            reply = self._read_reply()
+        except BaseException as e:
+            # An unread reply would be returned for the next state, so stop for good.
+            self._stop()
+            self._error = self._error or f"{self.name} was interrupted: {e!r}"
+            raise
         return None if reply == DEAD_END_REPLY else int(reply)
 
     def destroy(self):
         if self._process is None:
             return
         # eval_server exits when its stdin closes.
-        self._process.stdin.close()
-        try:
+        with suppress(OSError):
+            self._process.stdin.close()
+        with suppress(subprocess.TimeoutExpired):
             self._process.wait(timeout=1)
-        except subprocess.TimeoutExpired:
-            self._process.kill()
-            self._process.wait()
-        self._process.stdout.close()
-        self._process = None
+        self._stop()
 
 
 class _NamedHeuristic(FastDownwardHeuristic):

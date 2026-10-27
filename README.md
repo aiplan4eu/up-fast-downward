@@ -89,6 +89,11 @@ The integration adds the heuristics of Fast Downward as engines of the Heuristic
 ```
 from unified_planning.shortcuts import *
 
+# Needed until unified_planning registers the engines.
+get_environment().factory.add_engine(
+    "fast-downward-lmcut", "up_fast_downward.fast_downward_heuristic", "FastDownwardLMCutHeuristic"
+)
+
 with SequentialSimulator(problem) as simulator, Heuristic(problem, name="fast-downward-lmcut") as h:
     print(h.value(simulator.get_initial_state()))  # None if a dead end is detected
 ```

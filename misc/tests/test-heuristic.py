@@ -100,6 +100,52 @@ def test_generic_engine():
     assert fdh.FastDownwardHeuristic.guarantees(HeuristicGuarantee.SAFE) is False
 
 
+def test_g_dependent_evaluator():
+    problem = get_example_problems()['robot_loader'].problem
+    with SequentialSimulator(problem) as sim, \
+            fdh.FastDownwardHMaxHeuristic(problem) as hmax, \
+            fdh.FastDownwardHeuristic(problem, fast_downward_heuristic='sum([g(), hmax()])') as h:
+        state = sim.get_initial_state()
+        assert h.value(state) == hmax.value(state)
+
+
+def test_boolean_assignment():
+    x, y = Fluent('x'), Fluent('y')
+    a = InstantaneousAction('a')
+    a.add_effect(x, y)
+    problem = Problem('bool_assignment')
+    problem.add_fluent(x, default_initial_value=False)
+    problem.add_fluent(y, default_initial_value=True)
+    problem.add_action(a)
+    problem.add_goal(x)
+    assert not fdh.FastDownwardLMCutHeuristic.supports(problem.kind)
+    with SequentialSimulator(problem) as sim, fdh.FastDownwardFFHeuristic(problem) as h:
+        assert h.value(sim.get_initial_state()) == 1
+
+
+def test_process_exit():
+    problem = get_example_problems()['robot_loader'].problem
+    with SequentialSimulator(problem) as sim, fdh.FastDownwardFFHeuristic(problem) as h:
+        h._process.kill()
+        for _ in range(2):
+            with pytest.raises(UPException, match='exited'):
+                h.value(sim.get_initial_state())
+
+
+def test_interrupted_request(monkeypatch):
+    def interrupt():
+        raise KeyboardInterrupt
+    problem = get_example_problems()['robot_loader'].problem
+    with SequentialSimulator(problem) as sim, fdh.FastDownwardFFHeuristic(problem) as h:
+        monkeypatch.setattr(h, '_read_reply', interrupt)
+        with pytest.raises(KeyboardInterrupt):
+            h.value(sim.get_initial_state())
+        monkeypatch.undo()
+        assert h._process is None
+        with pytest.raises(UPException, match='interrupted'):
+            h.value(sim.get_initial_state())
+
+
 def test_conditional_effects_not_supported():
     problem = get_example_problems()['basic_conditional'].problem
     assert not fdh.FastDownwardLMCutHeuristic.supports(problem.kind)

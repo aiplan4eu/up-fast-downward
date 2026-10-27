@@ -194,6 +194,10 @@ means that no cached value from an earlier query can be returned.
 state. eval_server calls the task's `AxiomEvaluator` on the received values
 instead.
 
+**g values.** The cost of the path to a queried state is unknown. eval_server
+evaluates every state with g = 0, so evaluators that read g (e.g. `g()` in the
+generic engine) treat the queried state as the initial state.
+
 ## Engines
 
 ### The generic engine and the named engines
@@ -265,9 +269,12 @@ the problem kind does not predict it exactly. For example, a disjunctive goal
 makes the translator introduce axioms, while a disjunctive precondition is
 split into several operators. The support is therefore checked at two levels.
 
-1. `supported_kind` drops `CONDITIONAL_EFFECTS` for the engines that do not
-   support them. The factory then never selects such an engine for a problem
-   with conditional effects.
+1. For the engines that do not support conditional effects, `supported_kind`
+   drops `CONDITIONAL_EFFECTS` and the kinds that can be written as
+   conditional effects (`FORALL_EFFECTS` and fluents in boolean assignments,
+   which `PDDLWriter` rewrites into `when` effects), as `fast-downward-opt`
+   does. The factory then never selects such an engine for these problems.
+   The condition kinds are kept, since only some of them yield axioms.
 2. After translation, `_check_supported` raises
    `UPUnsupportedProblemTypeError` if the task has axioms or conditional
    effects that the engine does not support.
@@ -317,7 +324,13 @@ error is raised and no other engine is tried.
   second for the process to exit, and kills it otherwise. If the Python
   process dies, the pipe closes and eval_server exits on its own.
 - If the process exits during `value`, the engine raises `UPException` with
-  the last log lines and does not restart it.
+  the last log lines and does not restart it. Later calls raise the same
+  error.
+- If a request is interrupted (e.g. by `KeyboardInterrupt`), the engine kills
+  the process, since its reply would otherwise be read as the value of the
+  next state. Later calls raise `UPException`.
+- If the process does not reply `@ready`, the constructor kills it and raises
+  `UPException`.
 - There is no time limit. The named CEGAR and merge-and-shrink engines bound
   their precomputation by the number of abstract states. A time limit can be
   set through the generic engine, e.g. with `main_loop_max_time` for

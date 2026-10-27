@@ -79,7 +79,8 @@ SearchStatus EvalServer::step() {
         StateRegistry registry(task_proxy);
         State state = registry.lookup_state(
             registry.get_initial_state().get_id(), move(values));
-        EvaluationContext eval_context(state);
+        // The path to the state is unknown, so g-dependent evaluators see g = 0.
+        EvaluationContext eval_context(state, 0, false, nullptr);
         int h = eval_context.get_evaluator_value_or_infinity(evaluator.get());
         cout << "@" << (h == EvaluationResult::INFTY ? "inf" : to_string(h))
              << endl;
