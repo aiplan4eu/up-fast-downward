@@ -112,11 +112,11 @@ jobs:
         run: |
           pip3 install tox
 
-      - name: Run basic test 
+      - name: Run tests
         run: |
 
           cd misc/
-          PIP_FIND_LINKS='${{ github.workspace }}/dist' tox -e unified-planning
+          PIP_FIND_LINKS='${{ github.workspace }}/dist' tox -e wheel
 
 
   run-tox-test-windows:
@@ -146,11 +146,11 @@ jobs:
         run: |
           pip3 install tox
 
-      - name: Run basic test 
+      - name: Run tests
         run: |
 
           cd misc/
-          $env:PIP_FIND_LINKS='${{ github.workspace }}\dist'; tox -e unified-planning
+          $env:PIP_FIND_LINKS='${{ github.workspace }}\dist'; tox -e wheel
 
 
   deploy-pypi:
