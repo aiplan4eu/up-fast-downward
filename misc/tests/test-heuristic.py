@@ -14,10 +14,8 @@ fdh = pytest.importorskip("up_fast_downward.fast_downward_heuristic")
 
 unified_planning.shortcuts.get_environment().credits_stream = None # silence credits
 
-NAMED = [getattr(fdh, row[0]) for row in fdh.NAMED_HEURISTICS]
-
-
 def dead_end_problem():
+    """Applying destroy leads to a state from which done is unreachable."""
     broken = Fluent('broken')
     done = Fluent('done')
     destroy = InstantaneousAction('destroy')
@@ -35,6 +33,7 @@ def dead_end_problem():
 
 
 def problems():
+    """Small problems that all named engines support."""
     examples = get_example_problems()
     return [
         examples['robot_loader'].problem,
@@ -63,9 +62,10 @@ def optimal_trace(problem):
     return states, costs
 
 
-@pytest.mark.parametrize('engine', NAMED, ids=lambda e: e.__name__)
+@pytest.mark.parametrize('engine', fdh.NAMED_HEURISTICS, ids=lambda e: e.__name__)
 @pytest.mark.parametrize('problem', problems(), ids=lambda p: p.name)
 def test_guarantees_along_optimal_plan(engine, problem):
+    """Checks every guarantee the engine claims on the states of an optimal plan."""
     if not engine.supports(problem.kind):
         pytest.skip('unsupported problem kind')
     states, costs = optimal_trace(problem)
@@ -107,6 +107,7 @@ def test_conditional_effects_not_supported():
 
 
 def test_axioms_not_supported():
+    # The translator introduces axioms for this non-conjunctive goal.
     x, y = Fluent('x'), Fluent('y')
     a = InstantaneousAction('a')
     a.add_effect(x, True)
@@ -130,6 +131,7 @@ def test_path_dependent_rejected():
 
 
 def test_trivially_unsolvable():
+    # y is never achieved, so the translator proves the task unsolvable.
     x, y = Fluent('x'), Fluent('y')
     a = InstantaneousAction('a')
     a.add_precondition(y)
@@ -158,7 +160,7 @@ def benchmark(domain, problem_file, n=200):
             h.value(s)
         elapsed = time.perf_counter() - start
     print(f'{len(h._variables)} variables, '
-          f'{sum(len(atoms) for _, atoms in h._variables)} atoms, '
+          f'{sum(len(v.atoms) for v in h._variables)} atoms, '
           f'{1000 * elapsed / n:.2f} ms per value()')
 
 

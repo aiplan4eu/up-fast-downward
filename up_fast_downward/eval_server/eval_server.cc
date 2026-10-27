@@ -1,4 +1,5 @@
 // Copied into src/search/search_algorithms by up_fast_downward/_custom_build.py.
+// Used by up_fast_downward/fast_downward_heuristic.py, see doc/heuristics.md.
 
 #include "../axioms.h"
 #include "../evaluation_context.h"
@@ -16,9 +17,13 @@ using namespace std;
 
 namespace eval_server {
 /*
-  Reads states from stdin, one per line as the space-separated values of all
-  variables, and prints "@<h>" or "@inf" for each of them. Prints "@ready" once
-  the evaluator is constructed. Lines without the "@" prefix are log output.
+  Not a search: a loop that evaluates the states it reads from stdin.
+
+  Protocol, one line per message:
+    out: "@ready" once the evaluator is constructed
+    in:  a state, as the space-separated values of all variables
+    out: "@<h>", or "@inf" if the evaluator reports a dead end
+  It exits when stdin is closed. Lines without the "@" prefix are log output.
 */
 class EvalServer : public SearchAlgorithm {
     shared_ptr<Evaluator> evaluator;
@@ -61,10 +66,15 @@ SearchStatus EvalServer::step() {
         for (int &value : values) {
             in >> value;
         }
+        // The values of derived variables are ignored and recomputed here.
         axiom_evaluator.evaluate(values);
         /*
-          Heuristics cache values per registered state, so each query gets a
-          fresh registry; its only state carries the queried values unpacked.
+          Heuristics cache their values per registered state and abort on
+          unregistered ones. The registry has no way to register arbitrary
+          values, so we take the ID of the initial state of a fresh registry
+          and attach the queried values as unpacked data. The packed data
+          still holds the initial state, but heuristics only read the
+          unpacked values. A fresh registry also means a fresh cache.
         */
         StateRegistry registry(task_proxy);
         State state = registry.lookup_state(

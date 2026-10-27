@@ -119,6 +119,8 @@ The guarantees are those documented by Fast Downward 26.6. Fast Downward introdu
 
 **Note**: The landmark heuristics (`landmark_sum`, `landmark_cost_partitioning`) depend on the path to a state, not only on the state, and are therefore rejected.
 
+The design of the heuristic engines is described in [doc/heuristics.md](doc/heuristics.md).
+
 
 ## Current state of the system
 - Fast Downward version: 26.6
